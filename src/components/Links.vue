@@ -30,6 +30,11 @@
         </div>
       </swiper-slide>
     </swiper>
+
+    <div class="more-btn-wrapper glass-card" @click="openNav">
+      <Icon icon="ri:apps-line" width="20" height="20" />
+      <span>常用网站</span>
+    </div>
   </div>
 </template>
 
@@ -42,9 +47,12 @@ import 'swiper/css/pagination';
 import { Icon } from '@iconify/vue';
 import { siteLinks } from '@/config';
 import { useI18n } from 'vue-i18n';
+import { useGlobalStore } from '@/store'; // 引入 Store
 
 const { t } = useI18n();
+const store = useGlobalStore(); // 初始化 Store
 
+// 计算链接分页
 const siteLinksList = computed(() => {
   const result = [];
   for (let i = 0; i < siteLinks.length; i += 6) {
@@ -52,6 +60,11 @@ const siteLinksList = computed(() => {
   }
   return result;
 });
+
+// 打开导航弹窗的方法
+const openNav = () => {
+  store.navOpenState = true;
+};
 </script>
 
 <style scoped lang="scss">
@@ -116,8 +129,34 @@ const siteLinksList = computed(() => {
       }
     }
   }
+
+  /* 更多按钮样式 */
+  .more-btn-wrapper {
+    margin-top: 5px;
+    width: 100%;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 1rem;
+    
+    &:hover {
+      background: rgba(0, 0, 0, 0.4);
+      transform: translateY(-3px);
+      color: #fff;
+    }
+    
+    &:active {
+      transform: scale(0.98);
+    }
+  }
 }
 
+/* 复用毛玻璃卡片样式 */
 .glass-card {
   background: rgba(0, 0, 0, 0.25);
   backdrop-filter: blur(10px);

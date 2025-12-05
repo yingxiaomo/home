@@ -1,7 +1,6 @@
 <template>
   <Transition name="fade" mode="out-in">
     <div class="loading" v-if="!store.imgLoadStatus">
-      
       <div class="loading-orb orb-1"></div>
       <div class="loading-orb orb-2"></div>
 
@@ -32,6 +31,8 @@
   <Background />
 
   <WelcomeNotify />
+
+  <NavModal />
 
   <Transition name="slide-down">
     <div class="music-notify" v-show="musicNotifyShow">
@@ -91,11 +92,13 @@ import MusicPlayer from '@/components/MusicPlayer.vue';
 import Footer from '@/components/Footer.vue';
 import { Icon } from '@iconify/vue';
 import WelcomeNotify from '@/components/WelcomeNotify.vue';
+import NavModal from '@/components/NavModal.vue'; 
 
 const store = useGlobalStore();
 const musicNotifyShow = ref(false);
 let notifyTimer = null;
 
+// 粒子特效逻辑
 const particleCount = 50; 
 const particles = Array.from({ length: particleCount }, (_, i) => {
   const angle = Math.random() * 360; 
@@ -115,6 +118,7 @@ const particles = Array.from({ length: particleCount }, (_, i) => {
   };
 });
 
+// 监听音乐切换显示提示
 watch(() => store.playerTitle, (newVal) => {
   if (newVal) {
     musicNotifyShow.value = true;
@@ -138,6 +142,7 @@ body {
   font-family: "HarmonyOS_Regular", "Microsoft YaHei", sans-serif; 
 }
 
+/* Loading Screen Styles */
 .loading { 
   position: fixed; 
   top: 0; left: 0; 
@@ -236,17 +241,9 @@ body {
 }
 
 @keyframes gather {
-  0% {
-    transform: rotate(var(--angle)) translateX(var(--dist));
-    opacity: 0;
-  }
-  20% {
-    opacity: 1; 
-  }
-  100% {
-    transform: rotate(var(--angle)) translateX(0); 
-    opacity: 0; 
-  }
+  0% { transform: rotate(var(--angle)) translateX(var(--dist)); opacity: 0; }
+  20% { opacity: 1; }
+  100% { transform: rotate(var(--angle)) translateX(0); opacity: 0; }
 }
 
 @keyframes rotation {
@@ -294,6 +291,7 @@ body {
 .slide-down-enter-active, .slide-down-leave-active { transition: all 0.4s ease; }
 .slide-down-enter-from, .slide-down-leave-to { opacity: 0; transform: translate(-50%, -20px); }
 
+/* Main Container Layout */
 .main-container {
   position: absolute; top: 0; left: 0; width: 100%; height: 100%;
   display: flex; flex-direction: column; justify-content: center; align-items: center;
@@ -323,11 +321,7 @@ body {
 .footer { position: absolute; bottom: 20px; width: 100%; text-align: center; z-index: 10; }
 
 @media (max-width: 990px) {
-  body {
-    height: auto;
-    overflow-y: auto;
-  }
-
+  body { height: auto; overflow-y: auto; }
   .main-container { position: static; display: block; height: auto; min-height: 100vh; padding: 40px 20px; overflow-y: visible; }
   .content { flex-direction: column; gap: 40px; } 
   .left-col, .right-col { width: 100%; max-width: 100%; flex: none; }

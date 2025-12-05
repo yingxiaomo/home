@@ -6,6 +6,8 @@ export const useGlobalStore = defineStore('global', () => {
   const backgroundShow = ref(false); 
   const musicOpenState = ref(false); 
   
+  const navOpenState = ref(false);
+
   const playerState = ref(false); 
   const playerTitle = ref(null); 
   const playerArtist = ref(null); 
@@ -23,6 +25,7 @@ export const useGlobalStore = defineStore('global', () => {
     playerState,
     playerTitle,
     playerArtist,
-    playerLrc
+    playerLrc,
+    navOpenState
   };
 });
