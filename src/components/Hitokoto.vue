@@ -1,11 +1,8 @@
 <template>
   <div class="hitokoto-card glass-card">
-    
-    <div class="music-area-top" @click.stop="store.musicOpenState = true" title="打开音乐播放器">
-      
+    <div class="music-area-top" @click.stop="store.musicOpenState = true" :title="t('music.open')">
       <Icon icon="ri:music-2-fill" width="16" height="16" class="music-icon"/>
-      <span class="music-text">打开音乐播放器</span>
-      
+      <span class="music-text">{{ t('music.open') }}</span>
     </div>
     
     <div class="content-wrapper" @click="updateHitokoto">
@@ -24,7 +21,9 @@
 import { useHitokoto } from '@/composables/useHitokoto';
 import { useGlobalStore } from '@/store';
 import { Icon } from '@iconify/vue';
+import { useI18n } from 'vue-i18n';
 
+const { t } = useI18n();
 const { hitokoto, updateHitokoto } = useHitokoto();
 const store = useGlobalStore();
 </script>

@@ -3,22 +3,34 @@
     <div class="logo-wrapper">
       <img :src="logoUrl" class="logo" alt="Logo" />
       <div class="site-name">
-        <span class="main">{{ config.title }}</span>
+        <span class="main">{{ t('site.title') }}</span>
         <span class="sub">.{{ config.url.split('.')[1] }}</span>
       </div>
+      <button class="lang-switch" @click="toggleLang" title="Switch Language">
+        <Icon icon="ri:translate" width="20" height="20" />
+        {{ locale === 'zh' ? 'EN' : '中' }}
+      </button>
     </div>
     <div class="desc-card glass-card">
       <p class="greet">Hello World !</p>
-      <p class="desc-text">{{ config.description }}</p>
+      <p class="desc-text">{{ t('site.description') }}</p>
     </div>
   </div>
 </template>
 
 <script setup>
 import { siteConfig, themeConfig } from '@/config';
+import { useI18n } from 'vue-i18n';
+import { Icon } from '@iconify/vue';
 
 const config = siteConfig;
-const logoUrl = themeConfig.siteLogo; 
+const logoUrl = themeConfig.siteLogo;
+const { t, locale } = useI18n();
+
+const toggleLang = () => {
+  locale.value = locale.value === 'zh' ? 'en' : 'zh';
+  localStorage.setItem('lang', locale.value);
+};
 </script>
 
 <style scoped lang="scss">
@@ -32,6 +44,8 @@ const logoUrl = themeConfig.siteLogo;
     display: flex;
     align-items: center;
     margin-bottom: 2rem;
+    position: relative; 
+
     .logo {
       width: 100px;
       height: 100px; 
@@ -45,6 +59,27 @@ const logoUrl = themeConfig.siteLogo;
       font-family: "Pacifico-Regular", sans-serif;
       .main { font-size: 3rem; line-height: 1; }
       .sub { font-size: 1.5rem; margin-left: 0.5rem; }
+    }
+    
+    .lang-switch {
+      margin-left: auto;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #fff;
+      padding: 6px 12px;
+      border-radius: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+      transition: all 0.3s;
+      backdrop-filter: blur(4px);
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.25);
+        transform: scale(1.05);
+      }
     }
   }
 

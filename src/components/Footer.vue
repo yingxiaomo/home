@@ -8,11 +8,10 @@
       </div>
 
       <div v-else class="copyright" :key="'copy'">
-        
         <span>&copy; {{ copyrightDate }}</span>
         
         <span class="author-link">
-          Theme by 
+          {{ t('footer.theme_by') }} 
           <a :href="sys.p" target="_blank">{{ sys.n }}</a>
         </span>
         
@@ -21,12 +20,12 @@
         <a href="https://beian.miit.gov.cn/" target="_blank">{{ siteConfig.icp }}</a>
         
         <span class="split hidden-mobile">|</span>
-        <span class="running-time hidden-mobile">已运行 {{ runningDays }} 天</span>
+        <span class="running-time hidden-mobile">{{ t('footer.running', { days: runningDays }) }}</span>
 
         <template v-if="siteConfig.showStatistics">
           <span class="split hidden-mobile">|</span>
           <span id="busuanzi_container_site_pv" class="visitor-count hidden-mobile">
-            访问量 <span id="busuanzi_value_site_pv">--</span> 次
+            <span v-html="t('footer.visitors', { count: '<span id=\'busuanzi_value_site_pv\'>--</span>' })"></span>
           </span>
         </template>
       </div>
@@ -40,7 +39,9 @@ import { useGlobalStore } from '@/store';
 import { siteConfig } from '@/config';
 import { Icon } from '@iconify/vue';
 import dayjs from 'dayjs';
+import { useI18n } from 'vue-i18n';
 
+const { t } = useI18n();
 const _hash_sig = "62303176595668705747647561566b3d"; 
 const _hash_key = "5a57317661433976625739686158686e626d6c354c3231765979356964576830615763764c7a707a6348523061413d3d"; 
 

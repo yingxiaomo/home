@@ -2,7 +2,7 @@
   <div class="links-card">
     <div class="header">
       <Icon icon="ri:link" width="20" height="20" />
-      <span class="title">网站列表</span>
+      <span class="title">{{ t('links.title') }}</span>
     </div>
     
     <swiper
@@ -41,6 +41,9 @@ import 'swiper/css';
 import 'swiper/css/pagination';
 import { Icon } from '@iconify/vue';
 import { siteLinks } from '@/config';
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
 
 const siteLinksList = computed(() => {
   const result = [];
