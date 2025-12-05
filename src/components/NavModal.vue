@@ -16,40 +16,43 @@
         <div class="scroll-area">
           <Transition name="fade-content">
             <div v-show="contentReady">
-              <div 
-                class="folder-group" 
-                v-for="(group, index) in categoryList" 
-                :key="index"
-                :class="{ 'is-collapsed': group.collapsed }"
-              >
-                <div class="folder-header" @click="toggleGroup(group)">
-                  <div class="left">
-                    <Icon :icon="group.icon || 'ri:folder-fill'" width="20" class="folder-icon"/>
-                    <span class="folder-name">{{ group.title }}</span>
-                    <span class="count">{{ group.items.length }}</span>
+              <div v-memo="[categoryList]">
+                <div 
+                  class="folder-group" 
+                  v-for="(group, index) in categoryList" 
+                  :key="index"
+                  :class="{ 'is-collapsed': group.collapsed }"
+                  :style="{ '--delay': index * 0.03 + 's' }" 
+                >
+                  <div class="folder-header" @click="toggleGroup(group)">
+                    <div class="left">
+                      <Icon :icon="group.icon || 'ri:folder-fill'" width="20" class="folder-icon"/>
+                      <span class="folder-name">{{ group.title }}</span>
+                      <span class="count">{{ group.items.length }}</span>
+                    </div>
+                    <Icon icon="ri:arrow-down-s-line" class="arrow" />
                   </div>
-                  <Icon icon="ri:arrow-down-s-line" class="arrow" />
-                </div>
 
-                <div class="folder-wrapper" :class="{ 'wrapper-closed': group.collapsed }">
-                   <div class="folder-inner">
-                      <div class="grid">
-                        <a 
-                          v-for="(item, idx) in group.items" 
-                          :key="idx" 
-                          :href="item.url" 
-                          target="_blank"
-                          class="nav-item"
-                        >
-                          <div class="icon-box">
-                            <Icon :icon="item.icon || 'ri:link'" width="22" height="22" />
-                          </div>
-                          <span class="link-name">{{ item.name }}</span>
-                        </a>
-                      </div>
-                   </div>
-                </div>
+                  <div class="folder-wrapper" :class="{ 'wrapper-closed': group.collapsed }">
+                     <div class="folder-inner">
+                        <div class="grid">
+                          <a 
+                            v-for="(item, idx) in group.items" 
+                            :key="idx" 
+                            :href="item.url" 
+                            target="_blank"
+                            class="nav-item"
+                          >
+                            <div class="icon-box">
+                              <Icon :icon="item.icon || 'ri:link'" width="22" height="22" />
+                            </div>
+                            <span class="link-name">{{ item.name }}</span>
+                          </a>
+                        </div>
+                     </div>
+                  </div>
 
+                </div>
               </div>
             </div>
           </Transition>
@@ -64,7 +67,7 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, shallowRef, watch, triggerRef } from 'vue'; // 引入 shallowRef 和 triggerRef
 import { useGlobalStore } from '@/store';
 import { navData } from '@/config/nav'; 
 import { Icon } from '@iconify/vue';
@@ -72,7 +75,10 @@ import { Icon } from '@iconify/vue';
 const store = useGlobalStore();
 const contentReady = ref(false);
 
-const categoryList = ref(navData.map(item => ({
+// 🚀 优化点 3：使用 shallowRef 替代 ref
+// navData 是巨大的静态数据，我们不需要 Vue 深度监听它的每一个属性
+// 这能节省大量的内存和初始化时间
+const categoryList = shallowRef(navData.map(item => ({
   ...item,
   collapsed: item.collapsed || false 
 })));
@@ -80,9 +86,10 @@ const categoryList = ref(navData.map(item => ({
 watch(() => store.navOpenState, (isOpen) => {
   if (isOpen) {
     contentReady.value = false;
+    // 稍微缩短等待时间，配合瀑布流动画会很流畅
     setTimeout(() => {
       contentReady.value = true;
-    }, 350); 
+    }, 300); 
   } else {
     contentReady.value = false;
   }
@@ -93,7 +100,10 @@ const close = () => {
 };
 
 const toggleGroup = (group) => {
+  // 因为使用了 shallowRef，直接修改属性 Vue 检测不到
   group.collapsed = !group.collapsed;
+  // 手动触发更新，虽然多了一行代码，但对于大列表性能提升巨大
+  triggerRef(categoryList); 
 };
 </script>
 
@@ -113,16 +123,18 @@ const toggleGroup = (group) => {
   width: 100%;
   max-width: 850px;
   height: 80vh;
-  background: rgba(30, 30, 30, 0.75); /* 稍微降低透明度，减少混合计算 */
-  backdrop-filter: blur(12px); 
-  -webkit-backdrop-filter: blur(12px);
+  background: rgba(30, 30, 30, 0.85); 
+  /* 🚀 优化点 4：CSS 渲染优化
+     contain: content; 告诉浏览器这个盒子内部布局与外部无关
+     这减少了浏览器计算重排（Reflow）的范围
+  */
+  contain: content; 
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 16px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   box-shadow: 0 25px 50px rgba(0,0,0,0.5);
-  /* 仅保留 transform 加速 */
   transform: translateZ(0); 
 }
 
@@ -143,6 +155,8 @@ const toggleGroup = (group) => {
   overflow-y: auto;
   padding: 20px 24px;
   position: relative;
+  /* 优化滚动性能 */
+  scroll-behavior: smooth;
   &::-webkit-scrollbar { width: 6px; }
   &::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
   &::-webkit-scrollbar-track { background: transparent; }
@@ -158,8 +172,15 @@ const toggleGroup = (group) => {
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.05);
   overflow: hidden;
-  /* 移除 transition: all */
   
+  /* 🚀 优化点 5：瀑布流进场动画
+     默认 opacity: 0，通过 slide-in 动画滑入
+     delay 由行内样式控制
+  */
+  opacity: 0;
+  animation: slide-in 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+  animation-delay: var(--delay); 
+
   .folder-header {
     padding: 14px 20px;
     display: flex;
@@ -179,24 +200,20 @@ const toggleGroup = (group) => {
   &.is-collapsed .arrow { transform: rotate(-90deg); }
 }
 
-/* 👇 关键修改：Grid 动画实现折叠
-   这比 max-height 性能好得多，因为不用重排外部布局
-*/
+/* Grid 动画折叠 (保持不变，性能最好) */
 .folder-wrapper {
   display: grid;
-  grid-template-rows: 1fr; /* 默认展开 */
+  grid-template-rows: 1fr;
   transition: grid-template-rows 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  will-change: grid-template-rows; /* 提示浏览器优化 */
 }
 
 .folder-wrapper.wrapper-closed {
-  grid-template-rows: 0fr; /* 收起状态 */
+  grid-template-rows: 0fr;
 }
 
-.folder-inner {
-  overflow: hidden; /* 必须隐藏溢出内容 */
-}
+.folder-inner { overflow: hidden; }
 
-/* 内容网格 */
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
@@ -209,7 +226,11 @@ const toggleGroup = (group) => {
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
   background: rgba(0, 0, 0, 0.2); padding: 15px 10px; border-radius: 10px; text-decoration: none; color: #ddd;
   border: 1px solid transparent;
-  transition: transform 0.2s, background-color 0.2s; /* 仅过渡这些 */
+  
+  /* 🚀 优化点 6：减少交互时的重绘范围 
+     只过渡必要的属性
+  */
+  transition: transform 0.2s ease, background-color 0.2s ease;
 
   &:hover {
     background: rgba(255, 255, 255, 0.15);
@@ -223,15 +244,17 @@ const toggleGroup = (group) => {
   .link-name { font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
 }
 
-/* 弹窗动画 */
+/* 进场动画关键帧 */
+@keyframes slide-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* 弹窗本身动画 */
 .modal-enter-active, .modal-leave-active { transition: opacity 0.3s ease; }
 .modal-enter-from, .modal-leave-to { opacity: 0; }
 .modal-enter-active .modal-content { animation: pop-up 0.35s cubic-bezier(0.2, 0.8, 0.2, 1); }
 .modal-leave-active .modal-content { animation: pop-up 0.3s reverse ease-in; }
-
-.fade-content-enter-active { transition: opacity 0.4s ease; }
-.fade-content-enter-from { opacity: 0; transform: translateY(10px); }
-.fade-content-enter-to { opacity: 1; transform: translateY(0); }
 
 @keyframes pop-up {
   0% { transform: scale(0.95) translateY(10px); opacity: 0; }
