@@ -2,9 +2,11 @@ import { ref, onMounted, watch } from 'vue';
 import dayjs from 'dayjs';
 import { apiEndpoints } from '@/config';
 import { useI18n } from 'vue-i18n'; 
+
 const AMAP_BASE_URL = 'https://restapi.amap.com';
 const DEFAULT_ADCODE = '110000'; 
 const DEFAULT_CITY_NAME = '北京';
+
 const userGeoAPIs = apiEndpoints.userGeoHosts
     .filter(host => host.startsWith('http'))
     .map((host, index) => ({
@@ -23,6 +25,7 @@ const userGeoAPIs = apiEndpoints.userGeoHosts
         return null;
       }
     }));
+
 const FREE_IP_APIS = [
   { 
     name: 'Vore.top', 
@@ -53,6 +56,7 @@ const FREE_IP_APIS = [
     }
   }
 ];
+
 const weatherData = ref({
   city: '定位中...',
   weather: '--',
@@ -60,8 +64,10 @@ const weatherData = ref({
   wind: '无数据',
   updateTime: ''
 });
+
 const loading = ref(true); 
 let isInitialized = false;
+
 const getLocationByAmap = async (key) => {
   if (!key) return null;
   try {
@@ -79,6 +85,7 @@ const getLocationByAmap = async (key) => {
   }
   return null;
 };
+
 const getLocationByUserApi = async (lang = 'zh') => {
     console.log(`🔄 尝试自建兜底 IP 定位 (lang=${lang})...`);
     for (const api of userGeoAPIs) {
@@ -103,15 +110,21 @@ const getLocationByUserApi = async (lang = 'zh') => {
     }
     return null;
 };
+
 const getLocationByFreeApi = async () => {
   console.log('🌍 尝试免费第三方 IP 定位 (Vore/Xxapi)...');
   for (const api of FREE_IP_APIS) {
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 2000); 
+      const timeoutId = setTimeout(() => controller.abort(), 3000); 
       const res = await fetch(api.url, { signal: controller.signal });
       clearTimeout(timeoutId);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      
+      const contentType = res.headers.get('content-type');
+      if (!res.ok || (contentType && !contentType.includes('json'))) {
+          throw new Error(`Invalid Response (not JSON or not OK): ${res.status} ${contentType}`);
+      }
+
       const data = await res.json();
       const result = api.handler(data);
       const visitorIP = result?.ip;
@@ -126,10 +139,13 @@ const getLocationByFreeApi = async () => {
           cityName: cleanCity
         };
       }
-    } catch (e) { }
+    } catch (e) { 
+        console.warn(`定位源 ${api.name} 失败:`, e.message);
+    }
   }
   return null;
 };
+
 const getQWeather = async (location, key, host, lang = 'zh') => {
   try {
     const geoUrl = `${host}/geo/v2/city/lookup?location=${encodeURIComponent(location)}&key=${key}&lang=${lang}`;
@@ -159,7 +175,9 @@ const getQWeather = async (location, key, host, lang = 'zh') => {
   }
   return { success: false };
 };
+
 const getAmapWeather = async (location, key) => {
+  if (!key) return { success: false };
   try {
     const url = `${AMAP_BASE_URL}/v3/weather/weatherInfo?city=${encodeURIComponent(location)}&key=${key}&extensions=base`;
     const res = await fetch(url);
@@ -182,10 +200,17 @@ const getAmapWeather = async (location, key) => {
   }
   return { success: false };
 };
+
 const getVoreWeather = async () => {
   try {
     const url = 'https://api.vore.top/api/Weather';
     const res = await fetch(url);
+    const contentType = res.headers.get('content-type');
+    // 严格检查是否为 JSON 响应
+    if (!res.ok || (contentType && !contentType.includes('json'))) {
+        const errorBody = await res.text();
+        throw new Error(`Invalid Vore Weather Response (not JSON or not OK): Status ${res.status}, Content-Type: ${contentType}, Body: ${errorBody.substring(0, 100)}...`);
+    }
     const data = await res.json();
     if (data.code === 200 && data.data) {
       let d = data.data;
@@ -204,10 +229,11 @@ const getVoreWeather = async () => {
       };
     }
   } catch (e) {
-    console.warn('Vore IP 天气获取失败:', e);
+    console.warn('Vore IP 天气获取失败:', e.message);
   }
   return { success: false };
 };
+
 const getUserWeather = async (host, lat, lon, city, lang = 'zh') => {
   try {
     const params = new URLSearchParams();
@@ -218,7 +244,22 @@ const getUserWeather = async (host, lat, lon, city, lang = 'zh') => {
     params.append('city', city);
     params.append('lang', lang); 
     const url = `${host}/api/weather?${params.toString()}`;
-    const res = await fetch(url);
+    
+    // 添加通用 User-Agent 头，模拟浏览器请求
+    const headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'application/json', // 明确要求 JSON 响应
+    };
+
+    console.log(`🔄 尝试自建兜底天气: ${url}`);
+    const res = await fetch(url, { headers });
+
+    if (!res.ok) {
+        const errorText = await res.text();
+        console.warn(`自建兜底天气 HTTP 错误 (${res.status}): ${url}, 响应体: ${errorText.substring(0, 200)}`);
+        throw new Error(`HTTP Error: ${res.status}`);
+    }
+
     const data = await res.json();
     if (data.status === 'ok' && data.data) {
       const d = data.data;
@@ -236,10 +277,11 @@ const getUserWeather = async (host, lat, lon, city, lang = 'zh') => {
       };
     }
   } catch (e) {
-    console.warn('自建兜底天气 获取失败:', e);
+    console.warn('自建兜底天气 获取失败:', e.message);
   }
   return { success: false };
 };
+
 const fetchWeather = async (lang = 'zh') => {
   loading.value = true;
   weatherData.value.city = lang === 'en' ? 'Locating...' : '定位中...'; 
@@ -247,6 +289,8 @@ const fetchWeather = async (lang = 'zh') => {
   const qweatherKey = import.meta.env.VITE_QWEATHER_KEY;
   const qweatherHost = import.meta.env.VITE_QWEATHER_HOST;
   let locInfo = null;
+  
+  // 1. 定位阶段
   if (lang === 'en') {
       console.log('🔄 [EN] 优先尝试自建 API 定位...');
       locInfo = await getLocationByUserApi('en');
@@ -265,10 +309,14 @@ const fetchWeather = async (lang = 'zh') => {
           locInfo = await getLocationByUserApi('zh');
       }
   }
+
   const locationToUse = locInfo ? locInfo.location : DEFAULT_ADCODE;
   let cityName = locInfo ? locInfo.cityName : (lang === 'en' ? 'Beijing' : DEFAULT_CITY_NAME); 
   let result = null;
+
+  // 2. 天气获取阶段
   if (lang === 'en') {
+      // EN 模式优先自建或和风
       const fallbackHost = locInfo?.host || apiEndpoints.userGeoHosts[0];
       if (fallbackHost) {
           console.log('🔄 [EN] 尝试自建 API 天气...');
@@ -279,6 +327,7 @@ const fetchWeather = async (lang = 'zh') => {
           }
       }
       if (!result && qweatherKey && qweatherHost) {
+          console.log('🔄 [EN] 尝试和风天气...');
           const qRes = await getQWeather(locationToUse, qweatherKey, qweatherHost, 'en');
           if (qRes.success) {
               result = qRes.data;
@@ -286,20 +335,36 @@ const fetchWeather = async (lang = 'zh') => {
           }
       }
   } else {
+      // ZH 模式
+      // 优先自建兜底天气 (如果配置了)
+      const fallbackHost = locInfo?.host || apiEndpoints.userGeoHosts[0];
+      if (fallbackHost) {  
+          console.log('🔄 尝试自建兜底天气...');  
+          const uRes = await getUserWeather(fallbackHost, locInfo?.latitude, locInfo?.longitude, cityName, 'zh');  
+          if (uRes.success) {  
+              result = uRes.data;  
+              console.log(`🌤️ 天气来源: 自建兜底 (${result.source})`); 
+          } 
+      }
+      // 其次和风
       if (!result && qweatherKey && qweatherHost) {
+        console.log('🔄 尝试和风天气...');
         const qRes = await getQWeather(locationToUse, qweatherKey, qweatherHost, 'zh');
         if (qRes.success) {
           result = qRes.data;
           console.log('🌤️ 天气来源: 和风');
         }
       }
+      // 再次高德
       if (!result && amapKey) {
+        console.log('🔄 尝试高德天气...');
         const aRes = await getAmapWeather(locationToUse, amapKey);
         if (aRes.success) {
           result = aRes.data;
           console.log('🌤️ 天气来源: 高德');
         }  
       }
+      // 再次 Vore (已添加错误处理)
       if (!result) {
         console.log('🔄 尝试 Vore IP 天气...');
         const vRes = await getVoreWeather();
@@ -311,18 +376,8 @@ const fetchWeather = async (lang = 'zh') => {
           console.log('🌤️ 天气来源: Vore.top (IP)');
         }
       }
-      if (!result) {
-          const fallbackHost = locInfo?.host || apiEndpoints.userGeoHosts[0];
-          if (fallbackHost) {  
-              console.log('🔄 尝试自建兜底天气...');  
-              const uRes = await getUserWeather(fallbackHost, locInfo?.latitude, locInfo?.longitude, cityName, 'zh');  
-              if (uRes.success) {  
-                  result = uRes.data;  
-                  console.log(`🌤️ 天气来源: 自建兜底 (${result.source})`); 
-              } 
-          }
-      }
   }
+
   if (result) {
     weatherData.value = result;
   } else {
@@ -337,6 +392,7 @@ const fetchWeather = async (lang = 'zh') => {
   }
   loading.value = false;
 };
+
 export const useWeather = () => {
   const { locale } = useI18n(); 
   if (!isInitialized) {
