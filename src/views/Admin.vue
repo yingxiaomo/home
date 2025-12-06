@@ -3,7 +3,10 @@
     <div v-if="!isAuthenticated" class="login-box glass-card">
       <h2>{{ t('admin.login.title') }}</h2>
       <input type="password" v-model="password" :placeholder="t('admin.login.placeholder')" @keyup.enter="login" class="glass-input">
-      <button @click="login" class="login-btn">{{ t('admin.login.btn') }}</button>
+      <button @click="login" class="login-btn" :disabled="isLoggingIn">
+          <Icon v-if="isLoggingIn" icon="ri:loader-4-line" class="spinner-sm" />
+          <span v-else>{{ t('admin.login.btn') }}</span>
+      </button>
       <p v-if="error" class="error-msg">{{ error }}</p>
     </div>
 
@@ -401,11 +404,35 @@ const validLinksCount = computed(() => newLinks.value.filter(l => l.name && l.ur
 const newFolder = ref({ title: '', icon: 'ri:folder-line' });
 
 // --- Auth Methods ---
-const login = () => {
-  if (password.value) {
-    localStorage.setItem('admin_token', password.value);
-    isAuthenticated.value = true;
-    error.value = '';
+const isLoggingIn = ref(false);
+
+const login = async () => {
+  if (!password.value) return;
+  
+  isLoggingIn.value = true;
+  error.value = '';
+
+  try {
+      const res = await fetch('/api/auth-check', {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/json',
+              'x-admin-password': password.value
+          }
+      });
+      
+      const data = await res.json();
+      
+      if (res.ok && data.success) {
+          localStorage.setItem('admin_token', password.value);
+          isAuthenticated.value = true;
+      } else {
+          error.value = data.message || t('admin.login.error');
+      }
+  } catch (e) {
+      error.value = t('admin.msg.network_error');
+  } finally {
+      isLoggingIn.value = false;
   }
 };
 

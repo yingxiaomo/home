@@ -49,7 +49,10 @@ export async function onRequest(context) {
         
         const env = context.env;
         const clientPassword = context.request.headers.get('x-admin-password');
-        if (env.ADMIN_PASSWORD && clientPassword !== env.ADMIN_PASSWORD) {
+        if (!env.ADMIN_PASSWORD) {
+             return new Response(JSON.stringify({ success: false, message: '系统未配置管理员密码，拒绝访问' }), { status: 403 });
+        }
+        if (clientPassword !== env.ADMIN_PASSWORD) {
              return new Response(JSON.stringify({ success: false, message: '未授权' }), { status: 401 });
         }
 
