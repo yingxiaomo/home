@@ -182,10 +182,9 @@ docker run -d -p 8080:3000 \
 │   ├── config/      # 全局配置
 │   ├── store/       # Pinia 状态管理
 │   └── utils/       # 工具函数
-├── server.js        # Node.js 后端服务 (用于 Docker/PM2 部署)
 ├── .env             # 环境变量配置文件 (需要手动创建)
-├── Dockerfile       # Docker 构建配置 (现在基于 Node.js，包含前端构建和服务运行)
-├── nginx.conf       # Nginx 服务器配置 (仅用于纯静态部署参考，不再是 Docker 核心)
+├── Dockerfile       # Docker 构建配置
+├── nginx.conf       # Nginx 服务器配置 
 ├── index.html       # 入口文件
 └── vite.config.js   # Vite 配置文件
 ```
