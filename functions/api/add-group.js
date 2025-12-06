@@ -120,8 +120,15 @@ export async function onRequest(context) {
     try {
         if (context.request.method !== 'POST') return new Response(JSON.stringify({ success: false, message: '只支持 POST 请求' }), { status: 405 });
         
-        const { title, icon } = await context.request.json();
         const env = context.env;
+
+        // Auth Check
+        const clientPassword = context.request.headers.get('x-admin-password');
+        if (env.ADMIN_PASSWORD && clientPassword !== env.ADMIN_PASSWORD) {
+             return new Response(JSON.stringify({ success: false, message: '未授权：管理员密码错误' }), { status: 401 });
+        }
+
+        const { title, icon } = await context.request.json();
 
         if (!title) return new Response(JSON.stringify({ success: false, message: '缺少分组名称。' }), { status: 400 });
         

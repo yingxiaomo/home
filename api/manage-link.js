@@ -1,7 +1,4 @@
-/**
- * Cloudflare Pages Function: /api/manage-link
- * 作用: 管理链接（删除、移动/编辑）
- */
+export const config = { runtime: 'edge' };
 
 const base64Encode = (str) => btoa(unescape(encodeURIComponent(str)));
 const base64Decode = (b64) => decodeURIComponent(escape(atob(b64)));
@@ -12,7 +9,7 @@ async function getCurrentFile(env, branchName) {
     if (!env.GITHUB_TOKEN) throw new Error("GitHub Token未配置");
     
     const response = await fetch(GITHUB_API_URL, {
-        headers: { 'Authorization': `token ${env.GITHUB_TOKEN}`, 'Accept': 'application/vnd.github.com.v3+json', 'User-Agent': 'Cloudflare-Worker-Commit' }
+        headers: { 'Authorization': `token ${env.GITHUB_TOKEN}`, 'Accept': 'application/vnd.github.com.v3+json', 'User-Agent': 'Vercel-Edge-Commit' }
     });
     
     if (!response.ok) {
@@ -23,41 +20,29 @@ async function getCurrentFile(env, branchName) {
     return { sha: data.sha, content: base64Decode(data.content) };
 }
 
-// 辅助：从内容中删除指定链接
 function deleteLinkFromContent(content, groupTitle, targetUrl) {
-    // 1. 定位分组范围
-    // 匹配 title: "groupTitle" ... items: [ ... ]
     const groupRegex = new RegExp(`(title:\s*"${groupTitle}"[\s\S]*?items:\s*\[)([\s\S]*?)(\])`, 'm');
     const match = content.match(groupRegex);
     if (!match) throw new Error(`未找到分组: "${groupTitle}"`);
 
     const fullMatch = match[0];
-    const prefix = match[1]; // title...items: [
-    const itemsContent = match[2]; // ...
-    const suffix = match[3]; // ]
+    const prefix = match[1]; 
+    const itemsContent = match[2]; 
+    const suffix = match[3]; 
 
-    // 2. 构建针对该 URL 的正则
-    // 目标格式: { name: "...", icon: "...", url: "TARGET" }
-    // 允许宽松的空白字符和逗号
-    const escapedUrl = targetUrl.replace(/[.*+?^${}()|[\\\]/g, '\\$&');
-    const itemRegex = new RegExp(`\s*\{\s*name:[\s\S]*?url:\s*["']${escapedUrl}["']\s*\}\s*,?`, 'g');
+    const escapedUrl = targetUrl.replace(/[.*+?^${}()|[\\]/g, '\\$&');
+    const itemRegex = new RegExp(`\s*{\s*name:[\s\S]*?url:\s*["']${escapedUrl}["']\s*\}\s*,?`, 'g');
 
     if (!itemRegex.test(itemsContent)) {
         throw new Error(`在分组 "${groupTitle}" 中未找到链接: ${targetUrl}`);
     }
 
     let newItemsContent = itemsContent.replace(itemRegex, '');
-
-    // 3. 清理可能残留的逗号问题
-    // 移除多余的空行
-    newItemsContent = newItemsContent.replace(/^\s*[
-]/gm, '');
-    // 确保最后一个元素后没有逗号 (虽然 JS 允许，但为了美观) - 这里简化处理，JS 允许尾后逗号
+    newItemsContent = newItemsContent.replace(/^\s*[\r\n]/gm, '');
     
     return content.replace(fullMatch, prefix + newItemsContent + suffix);
 }
 
-// 辅助：添加链接 (复用 add-link 逻辑)
 function addLinkToContent(content, groupTitle, link) {
     const linkStr = `,
       { name: "${link.name}", icon: "${link.icon}", url: "${link.url}" }`;
@@ -69,10 +54,9 @@ function addLinkToContent(content, groupTitle, link) {
     const insertionPoint = match.index + match[1].length;
     let contentToInsert = linkStr;
     
-    // 检查是否为空数组
     const contentBefore = content.substring(content.lastIndexOf('[', insertionPoint) + 1, insertionPoint).trim();
     if (contentBefore === '') {
-        contentToInsert = contentToInsert.substring(1); // 去掉开头的逗号
+        contentToInsert = contentToInsert.substring(1); 
     }
     
     return content.slice(0, insertionPoint) + contentToInsert + content.slice(insertionPoint);
@@ -82,7 +66,7 @@ async function commitNewFile(sha, newContent, env, branchName, message) {
     const GITHUB_API_URL = `https://api.github.com/repos/${env.REPO_OWNER}/${env.REPO_NAME}/contents/${FILE_PATH}`;
     const response = await fetch(GITHUB_API_URL, {
         method: 'PUT',
-        headers: { 'Authorization': `token ${env.GITHUB_TOKEN}`, 'Accept': 'application/vnd.github.com.v3+json', 'Content-Type': 'application/json', 'User-Agent': 'Cloudflare-Worker-Commit' },
+        headers: { 'Authorization': `token ${env.GITHUB_TOKEN}`, 'Accept': 'application/vnd.github.com.v3+json', 'Content-Type': 'application/json', 'User-Agent': 'Vercel-Edge-Commit' },
         body: JSON.stringify({
             message: message,
             content: base64Encode(newContent),
@@ -98,17 +82,17 @@ async function commitNewFile(sha, newContent, env, branchName, message) {
     return response.json();
 }
 
-export async function onRequest(context) {
+export default async function handler(request) {
     try {
-        if (context.request.method !== 'POST') return new Response('Method Not Allowed', { status: 405 });
+        if (request.method !== 'POST') return new Response('Method Not Allowed', { status: 405 });
         
-        const env = context.env;
-        const clientPassword = context.request.headers.get('x-admin-password');
+        const env = process.env;
+        const clientPassword = request.headers.get('x-admin-password');
         if (env.ADMIN_PASSWORD && clientPassword !== env.ADMIN_PASSWORD) {
              return new Response(JSON.stringify({ success: false, message: '未授权' }), { status: 401 });
         }
 
-        const payload = await context.request.json(); // { action: 'DELETE'|'MOVE', oldGroupTitle, originalUrl, newGroupTitle?, newLink? }
+        const payload = await request.json(); 
         const branchToUse = env.BRANCH_NAME || 'main';
 
         const { sha, content } = await getCurrentFile(env, branchToUse);
@@ -119,7 +103,6 @@ export async function onRequest(context) {
             updatedContent = deleteLinkFromContent(content, payload.oldGroupTitle, payload.originalUrl);
             msg = `chore: delete link ${payload.originalUrl} from ${payload.oldGroupTitle}`;
         } else if (payload.action === 'MOVE') {
-            // MOVE = DELETE + ADD
             updatedContent = deleteLinkFromContent(content, payload.oldGroupTitle, payload.originalUrl);
             updatedContent = addLinkToContent(updatedContent, payload.newGroupTitle, payload.newLink);
             msg = `chore: update link ${payload.newLink.name}`;

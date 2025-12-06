@@ -33,9 +33,9 @@ VITE_QWEATHER_HOST="你的和风天气API_HOST"
 VITE_MUSIC_API="http://[您的音乐API地址]" 
 ```
 
-#### 2. 后台管理环境变量配置 (Cloudflare Pages)
+#### 2. 后台管理环境变量配置 (Cloudflare Pages / Vercel)
 
-要使用 `/admin` 后台管理功能，你必须在 Cloudflare Pages 的 **Settings -> Environment variables** 中配置以下变量（**注意：不要在 .env 文件中配置这些，必须在 Cloudflare 后台配置**）：
+本项目同时适配了 **Cloudflare Pages** 和 **Vercel** 的 Serverless 函数。要使用 `/admin` 后台管理功能，你必须在部署平台的后台配置以下环境变量（**注意：不要在 .env 文件中配置这些，必须在部署平台的 Dashboard 中配置**）：
 
 | 变量名 | 说明 | 必填 | 示例 |
 | :--- | :--- | :--- | :--- |
@@ -45,7 +45,7 @@ VITE_MUSIC_API="http://[您的音乐API地址]"
 | `ADMIN_PASSWORD` | 后台管理登录密码 | ✅ | `mypassword123` |
 | `BRANCH_NAME` | 目标分支 (默认 main) | ❌ | `main` |
 
-> **原理说明**：后台管理利用 Cloudflare Pages Functions (Serverless) 运行，当你点击保存时，它会通过 GitHub API 直接修改你仓库中的 `src/config/site-data.json` 或 `nav.js` 文件并自动 Commit。数秒后，Cloudflare 会检测到仓库更新并自动重新部署站点。
+> **原理说明**：后台管理利用 Cloudflare Pages Functions 或 Vercel Edge Functions 运行。当你点击保存时，它会通过 GitHub API 直接修改你仓库中的 `src/config/site-data.json` 或 `nav.js` 文件并自动 Commit。数秒后，部署平台会检测到仓库更新并自动重新部署站点。
 
 #### 3. 自建兜底 API 配置
 

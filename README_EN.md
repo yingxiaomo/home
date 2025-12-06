@@ -32,9 +32,9 @@ VITE_QWEATHER_HOST="Your_QWeather_API_HOST"
 VITE_MUSIC_API="http://[Your_Music_API_Address]"
 ```
 
-#### 2. Admin Panel Environment Variables (Cloudflare Pages)
+#### 2. Admin Panel Environment Variables (Cloudflare Pages / Vercel)
 
-To use the `/admin` feature, you must configure the following variables in **Cloudflare Pages -> Settings -> Environment variables** (**Note: Do not configure these in the .env file, they must be set in the Cloudflare dashboard**):
+This project is adapted for both **Cloudflare Pages** and **Vercel** Serverless Functions. To use the `/admin` feature, you must configure the following variables in your deployment platform's dashboard (**Note: Do not configure these in the .env file, they must be set in the platform's dashboard**):
 
 | Variable Name | Description | Required | Example |
 | :--- | :--- | :--- | :--- |
@@ -44,7 +44,7 @@ To use the `/admin` feature, you must configure the following variables in **Clo
 | `ADMIN_PASSWORD` | Admin Panel Login Password | ✅ | `mypassword123` |
 | `BRANCH_NAME` | Target Branch (default: main) | ❌ | `main` |
 
-> **How it works**: The admin panel uses Cloudflare Pages Functions (Serverless). When you click save, it uses the GitHub API to directly modify `src/config/site-data.json` or `nav.js` in your repository and commits the changes. Cloudflare will detect the repository update and automatically redeploy the site.
+> **How it works**: The admin panel uses Cloudflare Pages Functions or Vercel Edge Functions. When you click save, it uses the GitHub API to directly modify `src/config/site-data.json` or `nav.js` in your repository and commits the changes. The deployment platform will detect the repository update and automatically redeploy the site.
 
 #### 3. Custom Fallback API Configuration
 

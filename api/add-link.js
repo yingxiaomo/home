@@ -1,7 +1,4 @@
-/**
- * Cloudflare Pages Function: /api/add-link
- * 作用: 支持批量添加链接到 nav.js
- */
+export const config = { runtime: 'edge' };
 
 const base64Encode = (str) => btoa(unescape(encodeURIComponent(str)));
 const base64Decode = (b64) => decodeURIComponent(escape(atob(b64)));
@@ -12,7 +9,7 @@ async function getCurrentFile(env, branchName) {
     if (!env.GITHUB_TOKEN) throw new Error("GitHub Token未配置");
     
     const response = await fetch(GITHUB_API_URL, {
-        headers: { 'Authorization': `token ${env.GITHUB_TOKEN}`, 'Accept': 'application/vnd.github.com.v3+json', 'User-Agent': 'Cloudflare-Worker-Commit' }
+        headers: { 'Authorization': `token ${env.GITHUB_TOKEN}`, 'Accept': 'application/vnd.github.com.v3+json', 'User-Agent': 'Vercel-Edge-Commit' }
     });
     
     if (!response.ok) {
@@ -25,16 +22,14 @@ async function getCurrentFile(env, branchName) {
 
 function updateFileContent(oldContent, payload) {
     const targetGroupTitle = payload.groupTitle;
-    // 兼容单个 link 对象或 links 数组
     const links = payload.links || [payload.newLink];
     
-    // 1. 生成所有链接的字符串
     const newLinksString = links.map(link => 
-        `,\n      { name: "${link.name}", icon: "${link.icon}", url: "${link.url}" }`
+        `,
+      { name: "${link.name}", icon: "${link.icon}", url: "${link.url}" }`
     ).join('');
 
-    // 2. 查找插入位置
-    const itemsEndRegex = new RegExp(`([\\s\\S]*?title:\\s*"${targetGroupTitle}"[\\s\\S]*?items:\\s*\\[[\\s\\S]*?)\\]`, 'm');
+    const itemsEndRegex = new RegExp(`([\s\S]*?title:\s*"${targetGroupTitle}"[\s\S]*?items:\s*\[[\s\S]*?)\]`, 'm');
     const match = oldContent.match(itemsEndRegex);
 
     if (!match) throw new Error(`未找到分组: "${targetGroupTitle}"`);
@@ -42,10 +37,9 @@ function updateFileContent(oldContent, payload) {
     const insertionPoint = match.index + match[1].length;
     let contentToInsert = newLinksString;
     
-    // 3. 处理空数组的情况 (移除第一个逗号)
     const contentBefore = oldContent.substring(oldContent.lastIndexOf('[', insertionPoint) + 1, insertionPoint).trim();
     if (contentBefore === '') {
-        contentToInsert = contentToInsert.substring(1); // 去掉开头的逗号
+        contentToInsert = contentToInsert.substring(1); 
     }
     
     return oldContent.slice(0, insertionPoint) + contentToInsert + oldContent.slice(insertionPoint);
@@ -55,7 +49,7 @@ async function commitNewFile(sha, newContent, env, branchName, message) {
     const GITHUB_API_URL = `https://api.github.com/repos/${env.REPO_OWNER}/${env.REPO_NAME}/contents/${FILE_PATH}`;
     const response = await fetch(GITHUB_API_URL, {
         method: 'PUT',
-        headers: { 'Authorization': `token ${env.GITHUB_TOKEN}`, 'Accept': 'application/vnd.github.com.v3+json', 'Content-Type': 'application/json', 'User-Agent': 'Cloudflare-Worker-Commit' },
+        headers: { 'Authorization': `token ${env.GITHUB_TOKEN}`, 'Accept': 'application/vnd.github.com.v3+json', 'Content-Type': 'application/json', 'User-Agent': 'Vercel-Edge-Commit' },
         body: JSON.stringify({
             message: message,
             content: base64Encode(newContent),
@@ -71,22 +65,20 @@ async function commitNewFile(sha, newContent, env, branchName, message) {
     return response.json();
 }
 
-export async function onRequest(context) {
+export default async function handler(request) {
     try {
-        if (context.request.method !== 'POST') return new Response('Method Not Allowed', { status: 405 });
+        if (request.method !== 'POST') return new Response('Method Not Allowed', { status: 405 });
         
-        const env = context.env;
+        const env = process.env;
         
-        // Auth Check
-        const clientPassword = context.request.headers.get('x-admin-password');
+        const clientPassword = request.headers.get('x-admin-password');
         if (env.ADMIN_PASSWORD && clientPassword !== env.ADMIN_PASSWORD) {
              return new Response(JSON.stringify({ success: false, message: '未授权：管理员密码错误' }), { status: 401 });
         }
 
-        const payload = await context.request.json();
+        const payload = await request.json();
         const branchToUse = env.BRANCH_NAME || 'main';
 
-        // 简单的校验
         if (!payload.groupTitle || (!payload.links && !payload.newLink)) {
             return new Response(JSON.stringify({ success: false, message: '缺少参数' }), { status: 400 });
         }
