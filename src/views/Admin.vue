@@ -157,42 +157,72 @@
              <div v-if="currentTab === 'manage'" class="manage-container">
                 <Transition name="fade-content" mode="out-in">
                   <div v-if="!currentEditLink" :key="'list'">
-                    <div class="manage-group" v-for="group in categoryList" :key="group.title">
-                      <div class="group-header clickable" @click="toggleGroup(group)">
-                        <span class="group-title-text">{{ group.title }} ({{ group.items.length }})</span>
-                        <div class="group-actions" @click.stop>
-                             <button class="action-btn icon-only delete" style="padding:4px;" @click="deleteGroupLocal(group)" title="删除整个分组">
-                                <Icon icon="ri:delete-bin-2-line" width="16" />
-                             </button>
-                             <Icon icon="ri:arrow-down-s-line" class="arrow" :class="{ 'rotated': group.collapsed }"/>
-                        </div>
-                      </div>
-                      
-                      <div class="group-list-wrapper" :class="{ 'is-collapsed': group.collapsed }">
-                         <div class="group-list-inner">
-                            <div class="link-item-manage" v-for="(item, idx) in group.items" :key="item.url + idx">
-                                <div class="item-left-wrapper">
-                                    <div class="manage-icon-box">
-                                        <Icon v-if="!isUrl(item.icon)" :icon="item.icon || 'ri:link'" width="20" height="20" />
-                                        <img v-else :src="item.icon" class="manage-favicon" width="20" height="20" />
-                                    </div>
-                                    <div class="link-info">
-                                        <span class="link-name">{{ item.name }}</span>
-                                        <span class="link-url">{{ item.url }}</span>
-                                    </div>
+                    <draggable 
+                        v-model="categoryList" 
+                        item-key="title" 
+                        handle=".drag-handle-group" 
+                        @end="onDragChange" 
+                        :animation="200"
+                        ghost-class="ghost-card"
+                    >
+                        <template #item="{ element: group }">
+                            <div class="manage-group">
+                              <div class="group-header clickable" @click="toggleGroup(group)">
+                                <div style="display:flex;align-items:center;gap:10px;flex:1;">
+                                    <span class="drag-handle-group" @click.stop title="按住拖动排序">
+                                        <Icon icon="ri:drag-move-2-line" class="drag-icon" />
+                                    </span>
+                                    <span class="group-title-text">{{ group.title }} ({{ group.items.length }})</span>
                                 </div>
-                                <div class="actions">
-                                    <button class="action-btn icon-only edit" @click="startEdit(group.title, item, idx)" :title="t('admin.manage.edit')">
-                                        <Icon icon="ri:pencil-line" width="18" />
-                                    </button>
-                                    <button class="action-btn icon-only delete" @click="deleteLinkLocal(group.title, idx)" :title="t('admin.manage.delete')">
-                                        <Icon icon="ri:delete-bin-line" width="18" />
-                                    </button>
+                                <div class="group-actions" @click.stop>
+                                     <button class="action-btn icon-only delete" style="padding:4px;" @click="deleteGroupLocal(group)" title="删除整个分组">
+                                        <Icon icon="ri:delete-bin-2-line" width="16" />
+                                     </button>
+                                     <Icon icon="ri:arrow-down-s-line" class="arrow" :class="{ 'rotated': group.collapsed }"/>
                                 </div>
+                              </div>
+                              
+                              <div class="group-list-wrapper" :class="{ 'is-collapsed': group.collapsed }">
+                                 <draggable 
+                                    v-model="group.items" 
+                                    item-key="name" 
+                                    group="links" 
+                                    handle=".drag-handle-item" 
+                                    @end="onDragChange" 
+                                    :animation="200"
+                                    ghost-class="ghost-item"
+                                    class="group-list-inner"
+                                 >
+                                    <template #item="{ element: item, index: idx }">
+                                        <div class="link-item-manage">
+                                            <div class="item-left-wrapper">
+                                                <span class="drag-handle-item" title="按住拖动排序">
+                                                    <Icon icon="ri:draggable" class="drag-icon" />
+                                                </span>
+                                                <div class="manage-icon-box">
+                                                    <Icon v-if="!isUrl(item.icon)" :icon="item.icon || 'ri:link'" width="20" height="20" />
+                                                    <img v-else :src="item.icon" class="manage-favicon" width="20" height="20" />
+                                                </div>
+                                                <div class="link-info">
+                                                    <span class="link-name">{{ item.name }}</span>
+                                                    <span class="link-url">{{ item.url }}</span>
+                                                </div>
+                                            </div>
+                                            <div class="actions">
+                                                <button class="action-btn icon-only edit" @click="startEdit(group.title, item, idx)" :title="t('admin.manage.edit')">
+                                                    <Icon icon="ri:pencil-line" width="18" />
+                                                </button>
+                                                <button class="action-btn icon-only delete" @click="deleteLinkLocal(group.title, idx)" :title="t('admin.manage.delete')">
+                                                    <Icon icon="ri:delete-bin-line" width="18" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </template>
+                                 </draggable>
+                              </div>
                             </div>
-                         </div>
-                      </div>
-                    </div>
+                        </template>
+                    </draggable>
                   </div>
                   
                   <div v-else :key="'edit-form'" class="edit-form-wrapper">
@@ -332,6 +362,7 @@ import { ref, onMounted, computed, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
 import { Icon } from '@iconify/vue';
 import { useI18n } from 'vue-i18n';
+import draggable from 'vuedraggable';
 import { navData } from '@/config/nav';
 import initialSiteData from '@/config/site-data.json'; 
 
@@ -396,6 +427,10 @@ onMounted(() => {
 
 // --- Helper Methods ---
 const toggleGroup = (g) => g.collapsed = !g.collapsed;
+
+const onDragChange = () => {
+    hasUnsavedChanges.value = true;
+};
 
 const detectIcon = (link) => {
     if (!link.url.startsWith('http') || link.url.length < 8) return;
@@ -836,4 +871,29 @@ textarea.glass-input { resize: vertical; min-height: 80px; }
 /* Transitions */
 .slide-up-enter-active, .slide-up-leave-active { transition: all 0.3s ease; }
 .slide-up-enter-from, .slide-up-leave-to { opacity: 0; transform: translateY(-20px); }
+
+/* Drag & Drop Styles */
+.drag-handle-group, .drag-handle-item {
+    cursor: move;
+    color: rgba(255, 255, 255, 0.3);
+    display: flex;
+    align-items: center;
+    transition: color 0.2s;
+}
+.drag-handle-group:hover, .drag-handle-item:hover {
+    color: #4facfe;
+}
+.drag-handle-item {
+    margin-right: 10px;
+}
+.ghost-card {
+    opacity: 0.5;
+    background: rgba(79, 172, 254, 0.1);
+    border: 1px dashed #4facfe;
+}
+.ghost-item {
+    opacity: 0.5;
+    background: rgba(79, 172, 254, 0.1);
+    border: 1px dashed #4facfe;
+}
 </style>
