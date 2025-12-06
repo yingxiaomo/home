@@ -31,7 +31,7 @@ function deleteLinkFromContent(content, groupTitle, targetUrl) {
     const suffix = match[3]; 
 
     const escapedUrl = targetUrl.replace(/[.*+?^${}()|[\\]/g, '\\$&');
-    const itemRegex = new RegExp(`\s*{\s*name:[\s\S]*?url:\s*["']${escapedUrl}["']\s*\}\s*,?`, 'g');
+    const itemRegex = new RegExp(`\s*{\s*name:[\s\S]*?url:\s*["']${escapedUrl}["']\s*}\s*,?`, 'g');
 
     if (!itemRegex.test(itemsContent)) {
         throw new Error(`在分组 "${groupTitle}" 中未找到链接: ${targetUrl}`);

@@ -38,8 +38,8 @@ function deleteLinkFromContent(content, groupTitle, targetUrl) {
 
     // 2. 构建针对该 URL 的正则
     // 目标格式: { name: "...", icon: "...", url: "TARGET" }
-    // 允许宽松的空白字符和逗号
-    const escapedUrl = targetUrl.replace(/[.*+?^${}()|[\\\]/g, '\\$&');
+    const escapedUrl = targetUrl.replace(/[.*+?^${}()|[\\]/g, '\\$&');
+    // 注意：在字符串中构建正则，反斜杠需要双写
     const itemRegex = new RegExp(`\s*\{\s*name:[\s\S]*?url:\s*["']${escapedUrl}["']\s*\}\s*,?`, 'g');
 
     if (!itemRegex.test(itemsContent)) {
@@ -50,9 +50,8 @@ function deleteLinkFromContent(content, groupTitle, targetUrl) {
 
     // 3. 清理可能残留的逗号问题
     // 移除多余的空行
-    newItemsContent = newItemsContent.replace(/^\s*[
-]/gm, '');
-    // 确保最后一个元素后没有逗号 (虽然 JS 允许，但为了美观) - 这里简化处理，JS 允许尾后逗号
+    newItemsContent = newItemsContent.replace(/^\s*[\r\n]/gm, '');
+    // 确保最后一个元素后没有逗号 (虽然 JS 允许，但为了美观)
     
     return content.replace(fullMatch, prefix + newItemsContent + suffix);
 }
