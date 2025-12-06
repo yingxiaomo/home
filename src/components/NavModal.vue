@@ -100,7 +100,7 @@
 import { ref, watch, onMounted, nextTick } from 'vue';
 import { useGlobalStore } from '@/store';
 import { navData } from '@/config/nav';
-import { searchEngines } from '@/config/search';
+import { searchEngines } from '@/config/search'; 
 import { Icon } from '@iconify/vue';
 
 const store = useGlobalStore();
@@ -108,7 +108,7 @@ const contentReady = ref(false);
 const searchInputRef = ref(null);
 
 const keyword = ref('');
-const currentEngine = ref(searchEngines[0]);
+const currentEngine = ref(searchEngines[0]); 
 const showEngineList = ref(false);
 const isFocused = ref(false);
 
@@ -195,22 +195,29 @@ const toggleGroup = (group) => {
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   display: flex;
   align-items: center;
+  justify-content: center; 
+  position: relative; 
   gap: 15px;
   flex-shrink: 0;
-  z-index: 20; 
+  z-index: 20;
 
   .close-btn {
-    background: none; border: none; padding: 0; margin-left: auto;
+    background: none; border: none; padding: 0;
     color: rgba(255,255,255,0.5);
     cursor: pointer;
     transition: all 0.3s;
-    &:hover { color: #fff; transform: rotate(90deg); }
+    position: absolute;
+    right: 24px; 
+    top: 50%;
+    transform: translateY(-50%);
+
+    &:hover { color: #fff; transform: translateY(-50%) rotate(90deg); }
   }
 }
 
 .search-box {
-  flex: 1;
-  max-width: 600px;
+  width: 100%; 
+  max-width: 500px; 
   height: 46px;
   background: rgba(0, 0, 0, 0.25);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -357,7 +364,7 @@ const toggleGroup = (group) => {
 @media (max-width: 600px) {
   .modal-content { height: 90vh; width: 95%; }
   .grid { grid-template-columns: repeat(3, 1fr); gap: 10px; }
-  .search-header { padding: 15px; gap: 10px; }
-  .close-btn { width: 28px; height: 28px; }
+  .search-header { padding: 15px; }
+  .close-btn { right: 15px; } 
 }
 </style>
