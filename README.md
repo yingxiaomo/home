@@ -13,12 +13,14 @@ Clean Home 是一个基于 Vue 3 + Vite 重构的极简风格个人主页。本�
 - ♿ **无障碍友好**：全站按钮语义化，适配屏幕阅读器，让所有用户都能顺畅使用。
 - 🚀 **性能极致**：内置 Gzip 压缩配置，字体预加载，非阻塞式 UI 渲染，秒开体验。
 - 📊 **集成数据流**：支持 **访客统计 (不蒜子)** 和 **建站时间自动计算**，且功能可配置开关。
+- 🧭 **网址导航**：内置精美的网址导航页，支持分组折叠、搜索过滤，可作为浏览器主页使用。
+- 🖥️ **可视化后台**：提供 `/admin` 管理面板，支持在线修改站点配置、管理导航链接、上传图片，所有修改自动提交到 GitHub 仓库。
 
 ### ⚠️ 部署前的准备
 
-#### 1. 环境变量配置 (.env)
+#### 1. 前端环境变量配置 (.env)
 
-在项目根目录下创建 `.env` 文件，填入关键的 API 密钥：
+在项目根目录下创建 `.env` 文件，填入关键的 API 密钥（用于前端天气、地图等功能）：
 
 ```ini
 # --- 地图与天气服务 (推荐配置) ---
@@ -31,7 +33,21 @@ VITE_QWEATHER_HOST="你的和风天气API_HOST"
 VITE_MUSIC_API="http://[您的音乐API地址]" 
 ```
 
-#### 2. 自建兜底 API 配置
+#### 2. 后台管理环境变量配置 (Cloudflare Pages)
+
+要使用 `/admin` 后台管理功能，你必须在 Cloudflare Pages 的 **Settings -> Environment variables** 中配置以下变量（**注意：不要在 .env 文件中配置这些，必须在 Cloudflare 后台配置**）：
+
+| 变量名 | 说明 | 必填 | 示例 |
+| :--- | :--- | :--- | :--- |
+| `GITHUB_TOKEN` | GitHub Personal Access Token (需勾选 `repo` 权限) | ✅ | `ghp_xxxxxxxxxxxx` |
+| `REPO_OWNER` | 你的 GitHub 用户名 | ✅ | `yourname` |
+| `REPO_NAME` | 你的仓库名称 | ✅ | `Clean-Home` |
+| `ADMIN_PASSWORD` | 后台管理登录密码 | ✅ | `mypassword123` |
+| `BRANCH_NAME` | 目标分支 (默认 main) | ❌ | `main` |
+
+> **原理说明**：后台管理利用 Cloudflare Pages Functions (Serverless) 运行，当你点击保存时，它会通过 GitHub API 直接修改你仓库中的 `src/config/site-data.json` 或 `nav.js` 文件并自动 Commit。数秒后，Cloudflare 会检测到仓库更新并自动重新部署站点。
+
+#### 3. 自建兜底 API 配置
 
 如果在 `.env` 中没有配置 Key，或者免费 API 均失败，项目将使用我自建的兜底 API。
 如果有自己的，可以在 `src/config/index.js` 中的 `apiEndpoints` 对象里修改兜底接口地址。

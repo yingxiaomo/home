@@ -12,12 +12,14 @@ Clean Home is a minimalist personal homepage refactored with Vue 3 + Vite. This 
 - ♿ **Accessibility Friendly**: Semantic HTML for all buttons, adapted for screen readers, ensuring smooth usage for all users.
 - 🚀 **Extreme Performance**: Built-in Gzip compression configuration, font preloading, non-blocking UI rendering for instant loading.
 - 📊 **Integrated Data Flow**: Supports **Busuanzi visitor statistics** and **automatic site running time calculation**, with configurable toggles.
+- 🧭 **Web Navigation**: Built-in beautiful website navigation page, supporting group folding and search filtering, which can be used as a browser homepage.
+- 🖥️ **Visual Admin Panel**: Provides an `/admin` management panel, supporting online modification of site configuration, management of navigation links, and image uploading. All changes are automatically committed to the GitHub repository.
 
 ### ⚠️ Preparation Before Deployment
 
-#### 1. Environment Variables (.env)
+#### 1. Frontend Environment Variables (.env)
 
-Create a `.env` file in the project root directory and fill in the key API keys:
+Create a `.env` file in the project root directory and fill in the key API keys (for frontend weather, map, etc.):
 
 ```ini
 # --- Map & Weather Services (Recommended) ---
@@ -30,7 +32,21 @@ VITE_QWEATHER_HOST="Your_QWeather_API_HOST"
 VITE_MUSIC_API="http://[Your_Music_API_Address]"
 ```
 
-#### 2. Custom Fallback API Configuration
+#### 2. Admin Panel Environment Variables (Cloudflare Pages)
+
+To use the `/admin` feature, you must configure the following variables in **Cloudflare Pages -> Settings -> Environment variables** (**Note: Do not configure these in the .env file, they must be set in the Cloudflare dashboard**):
+
+| Variable Name | Description | Required | Example |
+| :--- | :--- | :--- | :--- |
+| `GITHUB_TOKEN` | GitHub Personal Access Token (requires `repo` scope) | ✅ | `ghp_xxxxxxxxxxxx` |
+| `REPO_OWNER` | Your GitHub Username | ✅ | `yourname` |
+| `REPO_NAME` | Your Repository Name | ✅ | `Clean-Home` |
+| `ADMIN_PASSWORD` | Admin Panel Login Password | ✅ | `mypassword123` |
+| `BRANCH_NAME` | Target Branch (default: main) | ❌ | `main` |
+
+> **How it works**: The admin panel uses Cloudflare Pages Functions (Serverless). When you click save, it uses the GitHub API to directly modify `src/config/site-data.json` or `nav.js` in your repository and commits the changes. Cloudflare will detect the repository update and automatically redeploy the site.
+
+#### 3. Custom Fallback API Configuration
 
 If no Key is configured in `.env`, or if free APIs fail, the project will use my self-hosted fallback API.
 If you have your own, you can modify the fallback interface address in the `apiEndpoints` object in `src/config/index.js`.
