@@ -189,28 +189,31 @@ const contentReady = ref(false);
 const searchInputRef = ref(null);
 const currentView = ref('search'); 
 
-
+// 搜索相关状态
 const keyword = ref('');
 const currentEngine = ref(searchEngines[0]);
 const showEngineList = ref(false);
 const isFocused = ref(false);
 
-
+// 添加导航相关状态
 const newLink = ref({ name: '', url: '', icon: 'ri:link' });
 const selectedGroupTitle = ref(navData[0]?.title || ''); 
 const isSaving = ref(false);
 const saveMessage = ref('');
 const isAutoIcon = ref(false); 
 
+// 链接分类数据
 const categoryList = ref(navData.map(item => ({
   ...item,
   collapsed: item.collapsed || false
 })));
 
+// 工具函数：判断字符串是否为 URL
 const isUrl = (str) => {
   return str.startsWith('http://') || str.startsWith('https://') || str.startsWith('//');
 };
 
+// 工具函数：从 URL 中提取域名，用于 Favicon CDN
 const getDomain = (url) => {
   try {
     const parsedUrl = new URL(url.startsWith('http') ? url : `https://${url}`);
@@ -220,6 +223,7 @@ const getDomain = (url) => {
   }
 };
 
+// 🌟 核心逻辑：自动识别图标
 watch(() => newLink.value.url, (newUrl) => {
   if (newUrl.length < 5) {
     newLink.value.icon = 'ri:link';
@@ -229,27 +233,33 @@ watch(() => newLink.value.url, (newUrl) => {
   
   const domain = getDomain(newUrl);
   if (domain) {
+    // 使用 DuckDuckGo 的 Favicon 服务，它提供了一个稳定的 CDN 接口
     const faviconUrl = `https://icons.duckduckgo.com/ip3/${domain}.ico`;
     
+    // 尝试加载图标
     const img = new Image();
     img.src = faviconUrl;
     img.onload = () => {
+      // 成功加载图标，自动填充 URL
       newLink.value.icon = faviconUrl;
       isAutoIcon.value = true;
     };
     img.onerror = () => {
+      // 加载失败，恢复默认或 Iconify 图标
       if (!isUrl(newLink.value.icon) || isAutoIcon.value) {
         newLink.value.icon = 'ri:link';
         isAutoIcon.value = false;
       }
     };
   } else {
+    // URL 无效，重置图标
     newLink.value.icon = 'ri:link';
     isAutoIcon.value = false;
   }
 });
 
 
+// 弹窗开关监听
 watch(() => store.navOpenState, (isOpen) => {
   if (isOpen) {
     contentReady.value = false;
@@ -263,11 +273,13 @@ watch(() => store.navOpenState, (isOpen) => {
   }
 });
 
+// 切换视图时，重新处理 contentReady 状态
 watch(currentView, (newView) => {
   if (newView !== 'add') {
     contentReady.value = false;
     setTimeout(() => { contentReady.value = true; }, 300);
   } else {
+     // 在切换到添加页面时，确保表单数据是干净的
     newLink.value = { name: '', url: '', icon: 'ri:link' };
     saveMessage.value = '';
     isAutoIcon.value = false;
@@ -275,20 +287,24 @@ watch(currentView, (newView) => {
 });
 
 
+// 切换引擎下拉显示
 const toggleEngineList = () => { showEngineList.value = !showEngineList.value; };
 const switchEngine = (eng) => { currentEngine.value = eng; showEngineList.value = false; if (searchInputRef.value) searchInputRef.value.focus(); };
+// 执行搜索
 const onSearch = () => {
   if (!keyword.value.trim()) return;
   const targetUrl = currentEngine.value.url + encodeURIComponent(keyword.value);
   window.open(targetUrl, '_blank');
 };
 
+
+// 提交新链接 - 修复后的逻辑，用于显示详细的 500 错误
 const onSubmitNewLink = async () => {
   if (!newLink.value.name.trim() || !newLink.value.url.trim() || !selectedGroupTitle.value) return;
 
   isSaving.value = true;
   saveMessage.value = '正在提交至 GitHub API... (请等待自动部署)';
-
+  
   try {
     const payload = {
       name: newLink.value.name,
@@ -299,28 +315,33 @@ const onSubmitNewLink = async () => {
 
     const response = await fetch('/api/add-link', { 
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+          'Content-Type': 'application/json',
+      },
       body: JSON.stringify(payload),
     });
 
-    const data = await response.json();
+    const data = await response.json(); // 尝试解析 JSON 响应体，无论状态码是否为 200
 
-    if (response.ok && data.success) {
-      saveMessage.value = data.message || '链接添加成功！请等待部署完成。';
-      
-      setTimeout(() => {
-          newLink.value = { name: '', url: '', icon: 'ri:link' };
-          isAutoIcon.value = false;
-          saveMessage.value = '';
-          currentView.value = 'nav'; 
-      }, 2500);
-      
+    if (response.ok) { // 检查 HTTP 状态码是否为 200-299 之间
+        saveMessage.value = data.message || '链接添加成功！请等待部署完成。';
+        
+        // 成功后清空表单并跳转到导航列表
+        setTimeout(() => {
+            newLink.value = { name: '', url: '', icon: 'ri:link' };
+            isAutoIcon.value = false;
+            saveMessage.value = '';
+            currentView.value = 'nav'; 
+        }, 2500);
+        
     } else {
-      saveMessage.value = data.message || '提交失败，请检查 Serverless Function 日志。';
+        // 捕获 4xx/5xx 响应，并显示后端返回的详细错误信息
+        saveMessage.value = `❌ 错误 (${response.status}): ${data.message}`; 
     }
-
+    
   } catch (error) {
-    saveMessage.value = `网络错误或Serverless Function 未正确部署: ${error.message}`;
+    // 捕获网络错误或 JSON 解析失败
+    saveMessage.value = `网络连接或数据解析错误: ${error.message}`;
   } finally {
     isSaving.value = false;
   }
@@ -377,7 +398,8 @@ const toggleGroup = (group) => { group.collapsed = !group.collapsed; };
   }
 }
 .search-input { flex: 1; background: transparent; border: none; outline: none; color: #fff; font-size: 1rem; height: 100%; padding: 0 10px; &::placeholder { color: rgba(255, 255, 255, 0.3); } }
-.search-btn { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; background: rgba(255, 255, 255, 0.1); border: none; border-radius: 8px; color: #eee; cursor: pointer; transition: 0.2s;
+.search-btn {
+  width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; background: rgba(255, 255, 255, 0.1); border: none; border-radius: 8px; color: #eee; cursor: pointer; transition: 0.2s;
   &:hover:not(:disabled) { background: rgba(255, 255, 255, 0.25); color: #fff; }
   &:active:not(:disabled) { transform: scale(0.95); }
   &:disabled { opacity: 0.3; cursor: not-allowed; }

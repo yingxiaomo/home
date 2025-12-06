@@ -18,7 +18,6 @@ const FILE_PATH = 'src/config/nav.js';
 // 步骤 1: 获取文件当前内容和 SHA
 // -----------------------------------------------------------
 async function getCurrentFile(env, branchName) {
-    // 动态使用分支名称
     const GITHUB_API_URL = `https://api.github.com/repos/${env.REPO_OWNER}/${env.REPO_NAME}/contents/${FILE_PATH}?ref=${branchName}`;
     
     if (!env.GITHUB_TOKEN) {
