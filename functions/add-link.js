@@ -3,9 +3,9 @@
  * 作用: 安全地调用 GitHub API 修改 nav.js 文件。
  * * 环境变量要求 (配置在 Cloudflare Pages Settings 中):
  * - GITHUB_TOKEN: 具有 repo 权限的 PAT
- * - REPO_OWNER: 仓库所有者
- * - REPO_NAME: 仓库名称
- * - BRANCH_NAME: (可选) 目标分支名称，例如 'feature/i18n'。如果未设置，默认为 'main'。
+ * - REPO_OWNER: 仓库所有者 (e.g., YingXiaoMo)
+ * - REPO_NAME: 仓库名称 (e.g., Clean-Home)
+ * - BRANCH_NAME: (可选) 目标分支名称，例如 'feature-i18n'。如果未设置，默认为 'main'。
  */
 
 // Cloudflare Workers 环境的 Base64 编码/解码工具
@@ -47,10 +47,13 @@ async function getCurrentFile(env, branchName) {
 // 步骤 2: 修改文件内容 (依赖于 nav.js 格式，保持不变)
 // -----------------------------------------------------------
 function updateFileContent(oldContent, newLink) {
+    // 构造新的链接字符串
     const newLinkString = `,\n      { name: "${newLink.name}", icon: "${newLink.icon}", url: "${newLink.url}" }`;
+
+    // 查找目标分组的 items 数组的结束位置
     const targetGroupTitle = newLink.groupTitle;
     
-    // 查找目标 items 数组的结束位置（例如: items: [...] 之后的 ]）
+    // 查找目标 items 数组的结束位置（依赖于 nav.js 文件格式）
     const itemsEndRegex = new RegExp(`(title: "${targetGroupTitle}",\\s*icon: "[^"]*",\\s*items: \\[\\s*[\\s\\S]*?)\\]`, 'm');
     const match = oldContent.match(itemsEndRegex);
 
@@ -61,6 +64,7 @@ function updateFileContent(oldContent, newLink) {
     const insertionPoint = match.index + match[1].length;
     let contentToInsert = newLinkString;
     
+    // 检查数组内容是否为空，如果为空，则不需要开头的逗号。
     const contentBeforeClosingBracket = oldContent.substring(oldContent.lastIndexOf('[', insertionPoint) + 1, insertionPoint).trim();
 
     if (contentBeforeClosingBracket === '') {
