@@ -4,7 +4,6 @@ import multer from 'multer';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 
-// ESM 环境下没有 __dirname，需要手动创建
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -12,15 +11,8 @@ const app = express();
 const upload = multer({ storage: multer.memoryStorage() });
 const port = process.env.PORT || 3000;
 
-// 解析 JSON
 app.use(express.json());
-
-// 静态文件服务 (托管 dist 目录)
 app.use(express.static(path.join(__dirname, 'dist')));
-
-// =============================================================================
-//  ADMIN PANEL UTILS (GitHub API)
-// =============================================================================
 
 const base64Encode = (str) => Buffer.from(str).toString('base64');
 const base64Decode = (b64) => Buffer.from(b64, 'base64').toString('utf-8');
@@ -78,11 +70,7 @@ const checkAuth = (req, res, next) => {
     next();
 };
 
-// =============================================================================
-//  ADMIN API ROUTES
-// =============================================================================
 
-// 1. 保存配置 (save-config)
 app.post('/api/save-config', checkAuth, async (req, res) => {
     try {
         const branch = process.env.BRANCH_NAME || 'main';
@@ -96,7 +84,7 @@ app.post('/api/save-config', checkAuth, async (req, res) => {
     }
 });
 
-// 2. 保存导航数据 (save-nav) - 全量覆盖
+
 app.post('/api/save-nav', checkAuth, async (req, res) => {
     try {
         const branch = process.env.BRANCH_NAME || 'main';
@@ -118,7 +106,6 @@ export const navData = ${JSON.stringify(navData, null, 2)};
     }
 });
 
-// 3. 上传文件 (upload)
 app.post('/api/upload', checkAuth, upload.single('file'), async (req, res) => {
     try {
         if (!req.file) return res.status(400).json({ success: false, message: '未找到文件' });
@@ -148,12 +135,10 @@ app.post('/api/upload', checkAuth, upload.single('file'), async (req, res) => {
     }
 });
 
-// SPA 回退处理 (必须放在最后)
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
-// 启动服务器
 app.listen(port, () => {
     console.log(`Clean Home Server running on port ${port}`);
     console.log(`- GitHub Repo: ${process.env.REPO_OWNER}/${process.env.REPO_NAME}`);
