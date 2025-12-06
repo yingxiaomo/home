@@ -1,0 +1,769 @@
+<template>
+  <div class="admin-container">
+    <div v-if="!isAuthenticated" class="login-box glass-card">
+      <h2>{{ t('admin.login.title') }}</h2>
+      <input type="password" v-model="password" :placeholder="t('admin.login.placeholder')" @keyup.enter="login" class="glass-input">
+      <button @click="login" class="login-btn">{{ t('admin.login.btn') }}</button>
+      <p v-if="error" class="error-msg">{{ error }}</p>
+    </div>
+
+    <div v-else class="dashboard">
+      <input type="file" ref="fileInput" @change="handleFileUpload" style="display: none;" accept="image/*" />
+      <div class="dashboard-header">
+        <h2 style="color:white;">{{ t('admin.dashboard.title') }}</h2>
+        <div class="header-actions">
+           <a href="/" target="_blank" class="preview-btn"><Icon icon="ri:external-link-line" /> {{ t('admin.dashboard.visit') }}</a>
+           <button @click="logout" class="logout-btn"><Icon icon="ri:logout-box-r-line" /> {{ t('admin.dashboard.logout') }}</button>
+        </div>
+      </div>
+      
+      <div class="management-ui glass-card-large">
+        <div class="tabs">
+          <button :class="{ active: currentTab === 'manage' }" @click="currentTab = 'manage'">
+             <Icon icon="ri:edit-2-line" /> {{ t('admin.tabs.manage') }}
+          </button>
+          <button :class="{ active: currentTab === 'add' }" @click="currentTab = 'add'">
+             <Icon icon="ri:add-line" /> {{ t('admin.tabs.add') }}
+          </button>
+          <button :class="{ active: currentTab === 'folder' }" @click="currentTab = 'folder'">
+             <Icon icon="ri:folder-add-line" /> {{ t('admin.tabs.folder') }}
+          </button>
+          <button :class="{ active: currentTab === 'config' }" @click="currentTab = 'config'">
+             <Icon icon="ri:settings-3-line" /> {{ t('admin.config.title') }}
+          </button>
+        </div>
+
+        <div class="tab-content">
+             <!-- CONFIG TAB -->
+             <div v-if="currentTab === 'config'" class="config-container">
+                <!-- Basic Info -->
+                <div class="config-section">
+                   <h3 class="section-title">{{ t('admin.config.site_info') }}</h3>
+                   <div class="form-grid">
+                      <div class="form-item">
+                        <label>{{ t('admin.config.site_title') }}</label>
+                        <input type="text" v-model="siteData.siteConfig.title" class="glass-input" />
+                      </div>
+                      <div class="form-item">
+                        <label>{{ t('admin.config.site_author') }}</label>
+                        <input type="text" v-model="siteData.siteConfig.author" class="glass-input" />
+                      </div>
+                      <div class="form-item full-width">
+                        <label>{{ t('admin.config.site_desc') }}</label>
+                        <textarea v-model="siteData.siteConfig.description" class="glass-input" rows="2"></textarea>
+                      </div>
+                      <div class="form-item">
+                        <label>{{ t('admin.config.site_logo') }}</label>
+                        <div class="input-with-upload">
+                            <input type="text" v-model="siteData.themeConfig.siteLogo" class="glass-input" />
+                            <button class="upload-trigger-btn" @click="triggerUpload(siteData.themeConfig, 'siteLogo')" :title="t('admin.upload.tooltip')">
+                                 <Icon v-if="isUploading && currentUploadTarget?.obj === siteData.themeConfig" icon="ri:loader-4-line" class="spinner-sm" />
+                                 <Icon v-else icon="ri:upload-cloud-2-line" />
+                            </button>
+                        </div>
+                      </div>
+                   </div>
+                </div>
+
+                <!-- Background -->
+                <div class="config-section">
+                   <h3 class="section-title">{{ t('admin.config.bg_settings') }}</h3>
+                   <div class="form-grid">
+                      <div class="form-item">
+                        <label>{{ t('admin.config.bg_type') }}</label>
+                        <select v-model="siteData.themeConfig.background.type" class="glass-input high-contrast-select">
+                          <option value="local">Local (本地)</option>
+                          <option value="api">API (在线)</option>
+                        </select>
+                      </div>
+                      <div class="form-item" v-if="siteData.themeConfig.background.type === 'api'">
+                        <label>{{ t('admin.config.bg_api') }}</label>
+                        <input type="text" v-model="siteData.themeConfig.background.apiURL" class="glass-input" />
+                      </div>
+                   </div>
+                </div>
+
+                <!-- Social Links -->
+                <div class="config-section">
+                   <h3 class="section-title">{{ t('admin.config.social') }}</h3>
+                   <div v-for="(item, idx) in siteData.socialLinks" :key="'social-'+idx" class="link-row-card glass-card-sm compact">
+                      <div class="row-inputs-flex">
+                          <div class="input-col"><input type="text" v-model="item.name" class="glass-input" placeholder="Name" /></div>
+                          <div class="input-col icon">
+                               <div class="input-with-upload">
+                                   <input type="text" v-model="item.icon" class="glass-input" placeholder="Icon" />
+                                   <button class="upload-trigger-btn icon-small" @click="triggerUpload(item, 'icon')">
+                                        <Icon v-if="isUploading && currentUploadTarget?.obj === item" icon="ri:loader-4-line" />
+                                        <Icon v-else icon="ri:upload-cloud-2-line" />
+                                   </button>
+                               </div>
+                          </div>
+                          <div class="input-col url"><input type="text" v-model="item.url" class="glass-input" placeholder="URL" /></div>
+                          <div class="input-col"><input type="text" v-model="item.tip" class="glass-input" placeholder="Tip" /></div>
+                          <button class="delete-btn" @click="siteData.socialLinks.splice(idx, 1)"><Icon icon="ri:close-line"/></button>
+                      </div>
+                   </div>
+                   <button class="action-btn add-row" @click="siteData.socialLinks.push({name:'',icon:'',url:'',tip:''})">
+                      <Icon icon="ri:add-line" /> {{ t('admin.add.add_row') }}
+                   </button>
+                </div>
+
+                 <!-- Site Links (Footer) -->
+                <div class="config-section">
+                   <h3 class="section-title">{{ t('admin.config.footer_links') }}</h3>
+                   <div v-for="(item, idx) in siteData.siteLinks" :key="'site-'+idx" class="link-row-card glass-card-sm compact">
+                      <div class="row-inputs-flex">
+                          <div class="input-col"><input type="text" v-model="item.name" class="glass-input" placeholder="Name" /></div>
+                          <div class="input-col icon">
+                               <div class="input-with-upload">
+                                   <input type="text" v-model="item.icon" class="glass-input" placeholder="Icon" />
+                                   <button class="upload-trigger-btn icon-small" @click="triggerUpload(item, 'icon')">
+                                        <Icon v-if="isUploading && currentUploadTarget?.obj === item" icon="ri:loader-4-line" />
+                                        <Icon v-else icon="ri:upload-cloud-2-line" />
+                                   </button>
+                               </div>
+                          </div>
+                          <div class="input-col url"><input type="text" v-model="item.link" class="glass-input" placeholder="URL" /></div>
+                          <button class="delete-btn" @click="siteData.siteLinks.splice(idx, 1)"><Icon icon="ri:close-line"/></button>
+                      </div>
+                   </div>
+                   <button class="action-btn add-row" @click="siteData.siteLinks.push({name:'',icon:'',link:''})">
+                      <Icon icon="ri:add-line" /> {{ t('admin.add.add_row') }}
+                   </button>
+                </div>
+
+                <div class="form-actions sticky-bottom">
+                    <button class="save-btn" @click="onSaveConfig" :disabled="isSaving">
+                       <Icon v-if="isSaving" icon="ri:loader-4-line" class="spinner-sm" />
+                       <span v-else>{{ t('admin.config.save_all') }}</span>
+                    </button>
+                </div>
+             </div>
+
+             <!-- MANAGE LINKS TAB -->
+             <div v-if="currentTab === 'manage'" class="manage-container">
+                <Transition name="fade-content" mode="out-in">
+                  <div v-if="!currentEditLink" :key="'list'">
+                    <div class="manage-group" v-for="group in categoryList" :key="group.title">
+                      <div class="group-header clickable" @click="toggleGroup(group)">
+                        <span class="group-title-text">{{ group.title }} ({{ group.items.length }})</span>
+                        <Icon icon="ri:arrow-down-s-line" class="arrow" :class="{ 'rotated': group.collapsed }"/>
+                      </div>
+                      
+                      <div class="group-list-wrapper" :class="{ 'is-collapsed': group.collapsed }">
+                         <div class="group-list-inner">
+                            <div class="link-item-manage" v-for="(item, idx) in group.items" :key="item.url">
+                                <div class="item-left-wrapper">
+                                    <div class="manage-icon-box">
+                                        <Icon v-if="!isUrl(item.icon)" :icon="item.icon || 'ri:link'" width="20" height="20" />
+                                        <img v-else :src="item.icon" class="manage-favicon" width="20" height="20" />
+                                    </div>
+                                    <div class="link-info">
+                                        <span class="link-name">{{ item.name }}</span>
+                                        <span class="link-url">{{ item.url }}</span>
+                                    </div>
+                                </div>
+                                <div class="actions">
+                                    <button class="action-btn icon-only edit" @click="startEdit(group.title, item, idx)" :title="t('admin.manage.edit')">
+                                        <Icon icon="ri:pencil-line" width="18" />
+                                    </button>
+                                    <button class="action-btn icon-only delete" @click="onManageLink('DELETE', group.title, item, idx)" :title="t('admin.manage.delete')">
+                                        <Icon icon="ri:delete-bin-line" width="18" />
+                                    </button>
+                                </div>
+                            </div>
+                         </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div v-else :key="'edit-form'" class="edit-form-wrapper">
+                      <h4 class="form-title">{{ t('admin.manage.edit_form_title', { name: currentEditLink.name }) }}</h4>
+                      <div class="form-item">
+                        <label>{{ t('admin.manage.name') }} *</label>
+                        <input type="text" v-model="currentEditLink.name" class="glass-input" />
+                      </div>
+                      <div class="form-item">
+                        <label>{{ t('admin.manage.url') }} *</label>
+                        <input type="url" v-model="currentEditLink.url" class="glass-input" />
+                      </div>
+                      <div class="form-item icon-group">
+                        <label>{{ t('admin.manage.icon') }}</label>
+                        <div class="input-with-upload">
+                             <input type="text" v-model="currentEditLink.icon" class="glass-input" />
+                             <button class="upload-trigger-btn" @click="triggerUpload(currentEditLink, 'icon')" :title="t('admin.upload.tooltip')">
+                                 <Icon v-if="isUploading && currentUploadTarget?.obj === currentEditLink" icon="ri:loader-4-line" class="spinner-sm" />
+                                 <Icon v-else icon="ri:upload-cloud-2-line" />
+                             </button>
+                        </div>
+                        <span v-if="currentEditLink.icon" class="icon-preview">
+                            <Icon v-if="!isUrl(currentEditLink.icon)" :icon="currentEditLink.icon" width="24" />
+                            <img v-else :src="currentEditLink.icon" :alt="t('admin.manage.preview')" width="24" height="24" class="favicon-img" />
+                        </span>
+                      </div>
+                      
+                      <div class="form-item">
+                        <label>{{ t('admin.manage.group') }} *</label>
+                        <select v-model="currentEditLink.newGroupTitle" class="glass-input high-contrast-select">
+                          <option 
+                            v-for="(group, index) in categoryList" 
+                            :key="index" 
+                            :value="group.title"
+                          >
+                            {{ group.title }}
+                          </option>
+                        </select>
+                      </div>
+
+                      <div class="form-actions">
+                        <button class="save-btn" @click="onManageLink('MOVE', currentEditLink.oldGroupTitle, currentEditLink.originalItem, currentEditLink.originalIndex)" :disabled="isSaving">
+                            <Icon v-if="isSaving" icon="ri:loader-4-line" class="spinner-sm" />
+                            <span v-else>{{ t('admin.manage.save') }}</span>
+                        </button>
+                        <button class="action-btn cancel" @click="currentEditLink = null" :disabled="isSaving">
+                            {{ t('admin.manage.cancel') }}
+                        </button>
+                      </div>
+                  </div>
+                </Transition>
+             </div>
+
+             <!-- ADD LINKS TAB -->
+             <div v-if="currentTab === 'add'" class="add-form-container">
+              <h3 class="form-title">{{ t('admin.add.title') }}</h3>
+              
+              <div class="form-item">
+                <label>{{ t('admin.add.group') }} *</label>
+                <select v-model="selectedGroupTitle" class="glass-input high-contrast-select">
+                  <option v-for="(group, index) in categoryList" :key="index" :value="group.title">{{ group.title }}</option>
+                </select>
+              </div>
+
+              <div class="dynamic-rows">
+                <div v-for="(link, index) in newLinks" :key="index" class="link-row-card glass-card-sm">
+                  <div class="row-header">
+                    <span class="row-label">{{ t('admin.add.row_label', { index: index + 1 }) }}</span>
+                    <button v-if="newLinks.length > 1" class="delete-btn" @click="removeLinkRow(index)" :title="t('admin.manage.delete')">
+                      <Icon icon="ri:close-line" />
+                    </button>
+                  </div>
+                  
+                  <div class="row-inputs-flex">
+                    <div class="input-col name">
+                      <input type="text" v-model="link.name" class="glass-input" :placeholder="t('admin.add.ph_name')" />
+                    </div>
+                    <div class="input-col url">
+                      <input type="url" v-model="link.url" class="glass-input" :placeholder="t('admin.add.ph_url')" @input="detectIcon(link)" />
+                    </div>
+                    <div class="input-col icon">
+                      <div class="icon-input-wrapper input-with-upload">
+                        <input type="text" v-model="link.icon" class="glass-input" :placeholder="t('admin.add.ph_icon')" style="padding-right: 70px;" />
+                        <button class="upload-trigger-btn inside" @click="triggerUpload(link, 'icon')" :title="t('admin.upload.tooltip')">
+                                 <Icon v-if="isUploading && currentUploadTarget?.obj === link" icon="ri:loader-4-line" class="spinner-sm" />
+                                 <Icon v-else icon="ri:upload-cloud-2-line" />
+                        </button>
+                        <div class="icon-preview-box" v-if="link.icon">
+                            <Icon v-if="!isUrl(link.icon)" :icon="link.icon" width="18" />
+                            <img v-else :src="link.icon" class="favicon-img" width="18" height="18" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-actions">
+                <button class="action-btn add-row" @click="addLinkRow">
+                  <Icon icon="ri:add-line" /> {{ t('admin.add.add_row') }}
+                </button>
+                <button class="action-btn save" @click="onSubmitLinks" :disabled="isSaving || !selectedGroupTitle">
+                  <Icon v-if="isSaving" icon="ri:loader-4-line" class="spinner-sm" />
+                  <span v-else>{{ t('admin.add.submit', { count: validLinksCount }) }}</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- ADD FOLDER TAB -->
+            <div v-if="currentTab === 'folder'" class="add-form-container">
+               <h3 class="form-title">{{ t('admin.folder.title') }}</h3>
+               <div class="form-item"><label>{{ t('admin.folder.name') }}</label><input type="text" v-model="newFolder.title" class="glass-input" :placeholder="t('admin.folder.ph_name')" /></div>
+               <div class="form-item">
+                   <label>{{ t('admin.folder.icon') }}</label>
+                   <div class="input-with-upload">
+                        <input type="text" v-model="newFolder.icon" class="glass-input" :placeholder="t('admin.folder.ph_icon')" />
+                        <button class="upload-trigger-btn" @click="triggerUpload(newFolder, 'icon')" :title="t('admin.upload.tooltip')">
+                             <Icon v-if="isUploading && currentUploadTarget?.obj === newFolder" icon="ri:loader-4-line" class="spinner-sm" />
+                             <Icon v-else icon="ri:upload-cloud-2-line" />
+                        </button>
+                   </div>
+               </div>
+               <div class="form-actions"><button class="action-btn save" @click="onSubmitNewFolder" :disabled="isSaving">{{ t('admin.folder.submit') }}</button></div>
+            </div>
+            
+            <p v-if="saveMessage" :class="['message', isSaving ? 'info' : 'error']">{{ saveMessage }}</p>
+            <p v-if="successCommitUrl" class="message success">
+                {{ t('admin.msg.success') }} <a :href="successCommitUrl" target="_blank">{{ t('admin.msg.view_commit') }}</a>
+            </p>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, onMounted, computed, nextTick } from 'vue';
+import { useRouter } from 'vue-router';
+import { Icon } from '@iconify/vue';
+import { useI18n } from 'vue-i18n';
+import { navData } from '@/config/nav';
+import initialSiteData from '@/config/site-data.json'; // Initial load
+
+const router = useRouter();
+const { t } = useI18n();
+
+// Auth State
+const password = ref('');
+const isAuthenticated = ref(false);
+const error = ref('');
+
+// UI State
+const currentTab = ref('manage');
+const categoryList = ref(JSON.parse(JSON.stringify(navData)));
+const siteData = ref(JSON.parse(JSON.stringify(initialSiteData))); // Reactive config
+const isSaving = ref(false);
+const saveMessage = ref('');
+const successCommitUrl = ref('');
+
+// Upload State
+const fileInput = ref(null);
+const currentUploadTarget = ref(null); // { obj, key }
+const isUploading = ref(false);
+
+// Manage State
+const currentEditLink = ref(null);
+
+// Add Links State
+const newLinks = ref([{ name: '', url: '', icon: 'ri:link' }]);
+const selectedGroupTitle = ref(navData[0]?.title || ''); 
+const isUrl = (str) => str && (str.startsWith('http://') || str.startsWith('https://'));
+const validLinksCount = computed(() => newLinks.value.filter(l => l.name && l.url).length);
+
+// Add Folder State
+const newFolder = ref({ title: '', icon: 'ri:folder-line' });
+
+// --- Auth Methods ---
+const login = () => {
+  if (password.value) {
+    localStorage.setItem('admin_token', password.value);
+    isAuthenticated.value = true;
+    error.value = '';
+  }
+};
+
+const logout = () => {
+  localStorage.removeItem('admin_token');
+  isAuthenticated.value = false;
+  router.push('/');
+};
+
+onMounted(() => {
+  const token = localStorage.getItem('admin_token');
+  if (token) {
+    isAuthenticated.value = true;
+  }
+  if (!selectedGroupTitle.value && categoryList.value.length > 0) {
+      selectedGroupTitle.value = categoryList.value[0].title;
+  }
+});
+
+// --- Helper Methods ---
+const toggleGroup = (g) => g.collapsed = !g.collapsed;
+
+const detectIcon = (link) => {
+    if (!link.url.startsWith('http') || link.url.length < 8) return;
+    try {
+        const domain = new URL(link.url).hostname;
+        const fav = `https://icons.duckduckgo.com/ip3/${domain}.ico`;
+        const img = new Image();
+        img.src = fav;
+        img.onload = () => { link.icon = fav; };
+    } catch(e) {}
+};
+
+const addLinkRow = () => {
+    newLinks.value.push({ name: '', url: '', icon: 'ri:link' });
+    nextTick(() => {
+        const container = document.querySelector('.dynamic-rows');
+        if(container) container.scrollTop = container.scrollHeight;
+    });
+};
+const removeLinkRow = (idx) => newLinks.value.splice(idx, 1);
+
+// --- Upload Methods ---
+const triggerUpload = (obj, key) => {
+    currentUploadTarget.value = { obj, key };
+    fileInput.value.click();
+};
+
+const handleFileUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    isUploading.value = true;
+    saveMessage.value = t('admin.msg.uploading'); // Need to add translation
+    successCommitUrl.value = '';
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+        const res = await fetch('/api/upload', {
+            method: 'POST',
+            headers: {
+                'x-admin-password': localStorage.getItem('admin_token') || ''
+            },
+            body: formData
+        });
+        const data = await res.json();
+        
+        if (res.ok) {
+            // Success: Update the target field
+            if (currentUploadTarget.value) {
+                currentUploadTarget.value.obj[currentUploadTarget.value.key] = data.url;
+            }
+            saveMessage.value = ''; // Clear message
+        } else {
+             if (res.status === 401) {
+                 saveMessage.value = t('admin.msg.unauth');
+             } else {
+                 saveMessage.value = `Error: ${data.message}`;
+             }
+        }
+    } catch (e) {
+        saveMessage.value = `${t('admin.msg.network_error')}: ${e.message}`;
+    } finally {
+        isUploading.value = false;
+        event.target.value = ''; // Reset input
+        currentUploadTarget.value = null;
+    }
+};
+
+// --- API Methods ---
+const getHeaders = () => ({
+    'Content-Type': 'application/json',
+    'x-admin-password': localStorage.getItem('admin_token') || ''
+});
+
+const onSubmitLinks = async () => {
+    const validLinks = newLinks.value.filter(l => l.name && l.url);
+    if (validLinks.length === 0) return;
+    isSaving.value = true;
+    saveMessage.value = t('admin.msg.submitting');
+    successCommitUrl.value = '';
+    try {
+        const res = await fetch('/api/add-link', {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify({ links: validLinks, groupTitle: selectedGroupTitle.value })
+        });
+        const data = await res.json();
+        if (res.ok) {
+            // Success
+            successCommitUrl.value = data.commit_url;
+            saveMessage.value = ''; // Clear processing message, show success block instead
+            setTimeout(() => { newLinks.value = [{ name: '', url: '', icon: 'ri:link' }]; }, 2000);
+        } else {
+             // Handle Error
+             if (res.status === 401) {
+                 saveMessage.value = t('admin.msg.unauth');
+             } else {
+                 saveMessage.value = `Error: ${data.message}`;
+             }
+        }
+    } catch (e) { saveMessage.value = `${t('admin.msg.network_error')}: ${e.message}`; } finally { isSaving.value = false; }
+};
+
+const onSubmitNewFolder = async () => {
+    if (!newFolder.value.title) return;
+    isSaving.value = true;
+    successCommitUrl.value = '';
+    try {
+        const res = await fetch('/api/add-group', {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify(newFolder.value)
+        });
+        const data = await res.json();
+        if (res.ok) {
+            successCommitUrl.value = data.commit_url;
+            setTimeout(() => { window.location.reload(); }, 2500);
+        } else {
+             if (res.status === 401) {
+                 saveMessage.value = t('admin.msg.unauth');
+             } else {
+                 saveMessage.value = `Error: ${data.message}`;
+             }
+        }
+    } catch (e) { saveMessage.value = `${t('admin.msg.network_error')}: ${e.message}`; } finally { isSaving.value = false; }
+};
+
+const startEdit = (groupTitle, item, index) => {
+    currentEditLink.value = {
+        originalItem: item, originalIndex: index, oldGroupTitle: groupTitle,
+        name: item.name, url: item.url, icon: item.icon, newGroupTitle: groupTitle, 
+    };
+};
+
+const onManageLink = async (action, groupTitle, item, index) => {
+    isSaving.value = true;
+    successCommitUrl.value = '';
+    saveMessage.value = action === 'DELETE' ? t('admin.msg.deleting') : t('admin.msg.saving');
+    let payload = { action: action, oldGroupTitle: groupTitle, originalIndex: index, originalUrl: item.url };
+    if (action === 'MOVE') {
+        payload.newGroupTitle = currentEditLink.value.newGroupTitle;
+        payload.newLink = { name: currentEditLink.value.name, url: currentEditLink.value.url, icon: currentEditLink.value.icon };
+    }
+    try {
+        const response = await fetch('/api/manage-link', { 
+            method: 'POST', headers: getHeaders(), body: JSON.stringify(payload)
+        });
+        const data = await response.json();
+        if (response.ok) {
+            successCommitUrl.value = data.commit_url;
+            saveMessage.value = ''; 
+            setTimeout(() => { window.location.reload(); }, 2500); 
+        } else {
+            if (response.status === 401) {
+                 saveMessage.value = t('admin.msg.unauth');
+            } else {
+                 saveMessage.value = `Error: ${data.message}`;
+            }
+        }
+    } catch (error) { saveMessage.value = `${t('admin.msg.network_error')}: ${error.message}`; } finally { isSaving.value = false; }
+};
+
+const onSaveConfig = async () => {
+    isSaving.value = true;
+    saveMessage.value = t('admin.msg.saving');
+    successCommitUrl.value = '';
+    try {
+        const res = await fetch('/api/save-config', {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify(siteData.value)
+        });
+        const data = await res.json();
+        if (res.ok) {
+            successCommitUrl.value = data.commit_url;
+            saveMessage.value = '';
+            // Don't reload immediately, maybe user wants to continue editing
+        } else {
+             if (res.status === 401) {
+                 saveMessage.value = t('admin.msg.unauth');
+             } else {
+                 saveMessage.value = `Error: ${data.message}`;
+             }
+        }
+    } catch (e) { saveMessage.value = `${t('admin.msg.network_error')}: ${e.message}`; } finally { isSaving.value = false; }
+};
+
+</script>
+
+<style scoped lang="scss">
+.admin-container {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 50px;
+  background: #1a1a1a;
+  color: white;
+  font-family: sans-serif;
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  padding: 2rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 300px;
+  margin-top: 100px;
+}
+
+.glass-card-large {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  min-height: 400px;
+}
+
+.glass-input {
+  width: 100%;
+  padding: 10px 12px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  border-radius: 6px;
+  outline: none;
+  &:focus { border-color: #4facfe; }
+}
+
+.high-contrast-select {
+  appearance: none; -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white' width='24' height='24'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 10px center;
+  option { background-color: #333; color: #fff; }
+}
+
+.login-btn {
+  padding: 10px;
+  background: #4facfe;
+  border: none;
+  color: white;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  &:hover { background: #3099f1; }
+}
+
+.error-msg { color: #ff4d4f; font-size: 0.9rem; }
+
+.dashboard {
+  width: 90%;
+  max-width: 1000px;
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.header-actions { display: flex; gap: 15px; }
+
+.preview-btn, .logout-btn {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: #fff;
+  padding: 8px 15px;
+  border-radius: 6px;
+  cursor: pointer;
+  text-decoration: none;
+  display: flex; align-items: center; gap: 5px;
+  &:hover { background: rgba(255,255,255,0.2); }
+}
+
+.tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.tabs button {
+  padding: 10px 20px;
+  background: rgba(255,255,255,0.05);
+  border: none;
+  color: #aaa;
+  cursor: pointer;
+  border-radius: 6px;
+  display: flex; align-items: center; gap: 8px;
+  transition: 0.2s;
+  &.active { background: #4facfe; color: white; }
+  &:hover:not(.active) { background: rgba(255,255,255,0.1); }
+}
+
+/* Copied Styles */
+.manage-container { padding: 0 10px; }
+.group-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 15px 10px; 
+    border-bottom: 1px solid rgba(255,255,255,0.1); 
+    cursor: pointer; user-select: none;
+    background: rgba(255,255,255,0.02);
+    margin-bottom: 5px;
+    border-radius: 6px;
+    &:hover { background: rgba(255,255,255,0.05); }
+}
+.group-title-text { font-size: 1rem; color: #fff; font-weight: 500; }
+.arrow { transition: transform 0.3s; color: rgba(255,255,255,0.6); &.rotated { transform: rotate(-90deg); } }
+
+.group-list-wrapper { display: grid; grid-template-rows: 1fr; transition: 0.3s; &.is-collapsed { grid-template-rows: 0fr; } }
+.group-list-inner { overflow: hidden; }
+
+.link-item-manage { 
+    display: flex; justify-content: space-between; align-items: center; 
+    padding: 10px 15px; margin-bottom: 8px; 
+    background: rgba(255, 255, 255, 0.03); 
+    border-radius: 6px; 
+    .item-left-wrapper { display: flex; align-items: center; gap: 15px; overflow: hidden; flex: 1; }
+    .manage-icon-box { width: 32px; height: 32px; background: rgba(0,0,0,0.3); border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: #ddd; }
+    .manage-favicon { width: 20px; height: 20px; object-fit: contain; }
+    .link-info { display: flex; flex-direction: column; overflow: hidden; flex: 1; .link-name { color: #fff; margin-bottom: 2px; } .link-url { font-size: 0.8rem; color: #888; } }
+    .actions { display: flex; gap: 8px; }
+}
+
+.action-btn {
+  padding: 8px 12px; border: none; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; transition: 0.2s;
+  &.save { background: #4facfe; color: #fff; &:hover { background: #3099f1; } }
+  &.edit { background: rgba(255,255,255,0.1); color: #ddd; &:hover { background: #4facfe; color: #fff; } }
+  &.delete { background: rgba(255,255,255,0.1); color: #ddd; &:hover { background: #ff4d4f; color: #fff; } }
+  &.add-row { background: rgba(255,255,255,0.1); color: #fff; width: 100%; margin-top: 10px; }
+  &.cancel { background: rgba(255,255,255,0.15); color: #fff; }
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+}
+
+.edit-form-wrapper, .add-form-container { padding: 20px; background: rgba(0,0,0,0.2); border-radius: 8px; }
+.form-title { margin-bottom: 20px; color: #fff; }
+.form-item { margin-bottom: 15px; label { display: block; margin-bottom: 5px; color: #ccc; font-size: 0.9rem; } }
+.form-actions { display: flex; gap: 15px; margin-top: 25px; }
+.save-btn { flex: 1; padding: 12px; background: #4facfe; border: none; border-radius: 6px; color: #fff; font-weight: bold; cursor: pointer; }
+
+.dynamic-rows { 
+    max-height: 400px; 
+    overflow-y: auto; 
+    padding-right: 5px; 
+
+    /* 自定义滚动条 */
+    &::-webkit-scrollbar { width: 6px; height: 6px; }
+    &::-webkit-scrollbar-track { background: transparent; }
+    &::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 4px; }
+    &::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.4); }
+}
+.link-row-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); padding: 15px; margin-bottom: 15px; border-radius: 8px; }
+.row-header { display: flex; justify-content: space-between; margin-bottom: 10px; color: #aaa; font-size: 0.85rem; }
+.delete-btn { background: none; border: none; color: #ff4d4f; cursor: pointer; }
+.row-inputs-flex { display: flex; gap: 10px; flex-wrap: wrap; .input-col { flex: 1; min-width: 120px; } }
+.icon-input-wrapper { position: relative; input { padding-right: 30px; } .icon-preview-box { position: absolute; right: 8px; top: 10px; pointer-events: none; } }
+
+.message { margin-top: 20px; padding: 10px; border-radius: 6px; &.info { color: #ffd700; background: rgba(255,215,0,0.1); } &.error { color: #ff4d4f; background: rgba(255,0,0,0.1); } &.success { color: #76ff7a; background: rgba(30,200,30,0.1); } }
+
+/* Config Form Styles */
+.config-container { padding: 0 10px; padding-bottom: 60px; }
+.config-section { margin-bottom: 30px; background: rgba(255,255,255,0.02); padding: 15px; border-radius: 8px; }
+.section-title { margin-bottom: 15px; border-left: 3px solid #4facfe; padding-left: 10px; color: #fff; font-size: 1.1rem; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+.form-grid .full-width { grid-column: span 2; }
+textarea.glass-input { resize: vertical; min-height: 80px; }
+.link-row-card.compact { padding: 10px; }
+.sticky-bottom { position: sticky; bottom: 0; background: #1a1a1a; padding: 10px 0; border-top: 1px solid rgba(255,255,255,0.1); box-shadow: 0 -5px 15px rgba(0,0,0,0.5); z-index: 10; margin-top: 20px; }
+
+/* Upload Styles */
+.input-with-upload { display: flex; align-items: center; gap: 8px; position: relative; width: 100%; }
+.input-with-upload .glass-input { flex: 1; }
+.upload-trigger-btn {
+    padding: 8px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 6px; color: #ccc; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: 0.2s;
+    &:hover { background: #4facfe; color: #fff; }
+}
+.upload-trigger-btn.inside { position: absolute; right: 35px; top: 50%; transform: translateY(-50%); background: none; border: none; padding: 4px; z-index: 10; &:hover { background: none; color: #4facfe; } }
+.upload-trigger-btn.icon-small { padding: 4px; width: 30px; height: 30px; }
+</style>

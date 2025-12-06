@@ -15,38 +15,35 @@ Clean Home is a minimalist personal homepage refactored with Vue 3 + Vite. This 
 - 🧭 **Web Navigation**: Built-in beautiful website navigation page, supporting group folding and search filtering, which can be used as a browser homepage.
 - 🖥️ **Visual Admin Panel**: Provides an `/admin` management panel, supporting online modification of site configuration, management of navigation links, and image uploading. All changes are automatically committed to the GitHub repository.
 
-### ⚠️ Preparation Before Deployment
+## 🛠️ Configuration & Environment Variables
 
-#### 1. Frontend Environment Variables (.env)
+This project uses environment variables to configure core features (Weather, Map) and the Admin Panel.
 
-Create a `.env` file in the project root directory and fill in the key API keys (for frontend weather, map, etc.):
+### Environment Variables List
 
-```ini
-# --- Map & Weather Services (Recommended) ---
-# 🚨 Amap and QWeather Keys have the highest priority. Configuring them provides the most accurate data.
-VITE_AMAP_KEY="Your_Amap_WebService_KEY"
-VITE_QWEATHER_KEY="Your_QWeather_WebService_KEY"
-VITE_QWEATHER_HOST="Your_QWeather_API_HOST"
+Regardless of your deployment method, please refer to the table below.
 
-# --- Music API Address (Optional) ---
-VITE_MUSIC_API="http://[Your_Music_API_Address]"
-```
+| Variable | Purpose | Feature | Required | Example |
+| :--- | :--- | :--- | :--- | :--- |
+| `VITE_AMAP_KEY` | Amap Web Service Key | **Weather/Loc** | ✅ | `Your_Key` |
+| `VITE_QWEATHER_KEY` | QWeather Web Service Key | **Weather** | ✅ | `Your_Key` |
+| `VITE_QWEATHER_HOST`| QWeather API Host | **Weather** | ✅ | `https://api.qweather.com` (Use `devapi` for free tier) |
+| `VITE_MUSIC_API` | Meting Music API | **Music Player** | ❌ | `https://api.injahow.cn/meting/` |
+| `GITHUB_TOKEN` | GitHub Token (`repo` scope) | **Admin Panel** | ⚠️* | `ghp_xxxxxxxx` |
+| `REPO_OWNER` | GitHub Username | **Admin Panel** | ⚠️* | `yourname` |
+| `REPO_NAME` | Repository Name | **Admin Panel** | ⚠️* | `Clean-Home` |
+| `ADMIN_PASSWORD` | Admin Login Password | **Admin Panel** | ⚠️* | `password123` |
+| `BRANCH_NAME` | Target Branch (default `main`) | **Admin Panel** | ❌ | `main` |
 
-#### 2. Admin Panel Environment Variables (Cloudflare Pages / Vercel)
+> **⚠️ Note**: Variables marked with `*` are ONLY effective when deploying via **Vercel** or **Cloudflare Pages**. **Docker and Nginx static deployments DO NOT support the Admin Panel** (as it relies on Serverless Functions).
 
-This project is adapted for both **Cloudflare Pages** and **Vercel** Serverless Functions. To use the `/admin` feature, you must configure the following variables in your deployment platform's dashboard (**Note: Do not configure these in the .env file, they must be set in the platform's dashboard**):
+### Where to Configure
 
-| Variable Name | Description | Required | Example |
-| :--- | :--- | :--- | :--- |
-| `GITHUB_TOKEN` | GitHub Personal Access Token (requires `repo` scope) | ✅ | `ghp_xxxxxxxxxxxx` |
-| `REPO_OWNER` | Your GitHub Username | ✅ | `yourname` |
-| `REPO_NAME` | Your Repository Name | ✅ | `Clean-Home` |
-| `ADMIN_PASSWORD` | Admin Panel Login Password | ✅ | `mypassword123` |
-| `BRANCH_NAME` | Target Branch (default: main) | ❌ | `main` |
+1.  **Local Development**: Create a `.env` file.
+2.  **Vercel / Cloudflare Pages**: Configure in **Settings -> Environment Variables**.
+3.  **Docker**: Pass via `-e` in `docker run` command (Note: Docker deployments only need `VITE_` variables).
 
-> **How it works**: The admin panel uses Cloudflare Pages Functions or Vercel Edge Functions. When you click save, it uses the GitHub API to directly modify `src/config/site-data.json` or `nav.js` in your repository and commits the changes. The deployment platform will detect the repository update and automatically redeploy the site.
-
-#### 3. Custom Fallback API Configuration
+### Custom Fallback API Configuration
 
 If no Key is configured in `.env`, or if free APIs fail, the project will use my self-hosted fallback API.
 If you have your own, you can modify the fallback interface address in the `apiEndpoints` object in `src/config/index.js`.
