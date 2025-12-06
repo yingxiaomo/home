@@ -19,7 +19,7 @@
   </p>
 
   <p>
-    <a href="https://ovoxo.cc">🔴 Live Demo (演示地址)</a>
+    <a href="https://home.xiaomo.eu">🔴 Live Demo (演示地址)</a>
   </p>
 </div>
 
