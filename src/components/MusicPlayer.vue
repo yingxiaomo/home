@@ -8,35 +8,29 @@
         {{ locale === 'en' ? 'Back' : '回到一言' }}
       </button>
     </div>
-
     <div class="controls">
       <button class="control-btn" @click="onPrev" type="button" aria-label="上一首">
         <Icon icon="ri:skip-back-fill" width="35" height="35" class="icon-btn" />
       </button>
-      
       <div class="play-toggle" @click="onToggle" role="button" tabindex="0" :aria-label="isPlaying ? '暂停' : '播放'" @keydown.space.prevent="onToggle">
         <Icon v-if="!isPlaying" icon="ri:play-circle-fill" width="60" height="60" class="icon-btn main-btn" />
         <Icon v-else icon="ri:pause-circle-fill" width="60" height="60" class="icon-btn main-btn" />
       </div>
-      
       <button class="control-btn" @click="onNext" type="button" aria-label="下一首">
         <Icon icon="ri:skip-forward-fill" width="35" height="35" class="icon-btn" />
       </button>
     </div>
-
     <div class="song-info">
       <span class="name">{{ currentSong.name }}</span>
       <span class="artist" v-if="currentSong.artist"> - {{ currentSong.artist }}</span>
     </div>
   </div>
-
   <Transition name="fade">
     <div class="music-modal" v-show="listVisible" @click.self="listVisible = false">
       <div class="modal-card">
         <div class="close-area" @click="listVisible = false" role="button" tabindex="0" aria-label="关闭列表">
            <Icon icon="ri:close-fill" width="24" height="24" />
         </div>
-        
         <div class="player-box">
           <APlayer
             v-if="songList.length > 0"
@@ -62,7 +56,6 @@
       </div>
     </div>
   </Transition>
-
   <Teleport to="body">
     <Transition name="notify-slide">
       <div class="music-notify-container" v-if="showNotify && currentSong.name">
@@ -78,7 +71,6 @@
         </div>
       </div>
     </Transition>
-
     <Transition name="lyric-fade">
       <div class="footer-lyric-bar" v-if="isPlaying && currentLyricText && !listVisible">
         <span class="text">{{ currentLyricText }}</span>
@@ -86,7 +78,6 @@
     </Transition>
   </Teleport>
 </template>
-
 <script setup>
 import { ref, onMounted, watch, onBeforeUnmount } from 'vue';
 import { useGlobalStore } from '@/store';
@@ -95,7 +86,6 @@ import { musicConfig } from '@/config';
 import { Icon } from '@iconify/vue';
 import APlayer from '@worstone/vue-aplayer';
 import { useI18n } from 'vue-i18n'; 
-
 const { locale } = useI18n();
 const store = useGlobalStore();
 const songList = ref([]);
@@ -107,12 +97,10 @@ const showNotify = ref(false);
 const currentLyricText = ref("");
 let notifyTimer = null;
 let lrcLines = [];
-
 watch(isPlaying, (val) => {
   if (val) document.body.classList.add('music-playing');
   else document.body.classList.remove('music-playing');
 });
-
 const initMusicList = async () => {
   songList.value = [];
   currentSong.value = { 
@@ -121,7 +109,6 @@ const initMusicList = async () => {
     cover: '', 
     lrc: '' 
   };
-  
   try {
     let list = [];
     if (locale.value === 'en') {
@@ -133,7 +120,6 @@ const initMusicList = async () => {
       console.log('🎵 [Music] 切换至中文模式：请求 API');
       list = await getPlayerList();
     }
-
     if (list && list.length > 0) {
       songList.value = list;
       updateBySongObject(list[0]);
@@ -145,29 +131,23 @@ const initMusicList = async () => {
     currentSong.value.name = locale.value === 'en' ? "Load Failed" : "加载失败";
   }
 };
-
 watch(locale, () => {
   isPlaying.value = false;
   initMusicList();
 });
-
 onMounted(() => {
   initMusicList();
 });
-
 onBeforeUnmount(() => {
   if (notifyTimer) clearTimeout(notifyTimer);
   document.body.classList.remove('music-playing');
 });
-
 const openList = () => listVisible.value = true;
 const onPrev = () => aplayerRef.value?.skipBack();
 const onNext = () => aplayerRef.value?.skipForward();
 const onToggle = () => aplayerRef.value?.toggle();
-
 const getRealIndex = () => {
   if (!aplayerRef.value) return 0;
-
   if (aplayerRef.value.aplayer && typeof aplayerRef.value.aplayer.index === 'number') {
     return aplayerRef.value.aplayer.index;
   }
@@ -179,10 +159,8 @@ const getRealIndex = () => {
   }
   return 0;
 };
-
 const updateByIndex = () => {
   const index = getRealIndex();
-
   if (index >= 0 && songList.value[index]) {
     const targetSong = songList.value[index];
     if (targetSong.name !== currentSong.value.name) {
@@ -191,7 +169,6 @@ const updateByIndex = () => {
     }
   }
 };
-
 const updateBySongObject = (song) => {
   currentSong.value = {
     name: song.name || song.title,
@@ -201,31 +178,25 @@ const updateBySongObject = (song) => {
   };
   parseLrc(song.lrc);
 };
-
 const onPlay = () => {
   isPlaying.value = true;
   updateByIndex();
   triggerNotify();
 };
-
 const onPause = () => {
   isPlaying.value = false;
 };
-
 const onListSwitch = (data) => {
   setTimeout(updateByIndex, 50);
 };
-
 const onLoadedMetadata = () => {
   setTimeout(updateByIndex, 50);
 };
-
 const onTimeUpdate = (e) => {
   const index = getRealIndex();
   if (index >= 0 && songList.value[index] && songList.value[index].name !== currentSong.value.name) {
       updateByIndex();
   }
-
   const time = e.target.currentTime;
   if (lrcLines.length) {
     let idx = -1;
@@ -236,13 +207,11 @@ const onTimeUpdate = (e) => {
     if (idx !== -1) currentLyricText.value = lrcLines[idx].text;
   }
 };
-
 const triggerNotify = () => {
   showNotify.value = true;
   if (notifyTimer) clearTimeout(notifyTimer);
   notifyTimer = setTimeout(() => { showNotify.value = false; }, 3000);
 };
-
 const parseLrc = async (lrcUrl) => {
   lrcLines = [];
   currentLyricText.value = " ";
@@ -261,7 +230,6 @@ const parseLrc = async (lrcUrl) => {
   } catch (e) {}
 };
 </script>
-
 <style scoped lang="scss">
 .glass-card { background: rgba(0, 0, 0, 0.25); backdrop-filter: blur(10px); border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1); color: white; }
 .music-card { width: 100%; height: 100%; padding: 20px; display: flex; flex-direction: column; justify-content: space-between; align-items: center; }
@@ -277,11 +245,8 @@ const parseLrc = async (lrcUrl) => {
   .main-btn { filter: drop-shadow(0 2px 6px rgba(0,0,0,0.3)); } 
 }
 .song-info { text-align: center; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 1rem; .artist { font-size: 0.85rem; opacity: 0.7; } }
-
 .music-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(5px); z-index: 9999; display: flex; justify-content: center; align-items: center; }
 .modal-card { width: 550px; min-height: 500px; max-width: 90vw; background: rgba(50, 50, 50, 0.65); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 0; position: relative; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6); overflow: hidden; display: flex; flex-direction: column; .close-area { position: absolute; top: 15px; right: 15px; z-index: 10; cursor: pointer; padding: 5px; border-radius: 50%; color: #fff; &:hover { background: rgba(255,255,255,0.1); } } .player-box { flex: 1; display: flex; flex-direction: column; } .loading-tips { text-align: center; padding: 40px; color: #ddd; } }
-
-/* APlayer 样式穿透调整 */
 :deep(.aplayer) {
   background: transparent !important; box-shadow: none !important; margin: 0; width: 100%; font-family: sans-serif;
   .aplayer-body { background: transparent !important; padding: 15px 15px 0 15px; }
@@ -293,11 +258,9 @@ const parseLrc = async (lrcUrl) => {
   }
   .aplayer-list { margin-top: 10px; display: block !important; height: auto !important; max-height: 380px !important; background: transparent !important; border: none !important; overflow-y: auto; &::-webkit-scrollbar { width: 5px; } &::-webkit-scrollbar-track { background: transparent; } &::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 4px; } &::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.4); } ol { background: transparent !important; overflow: visible !important; height: auto !important; li { background: transparent !important; border-top: 1px solid rgba(255,255,255,0.05) !important; height: 40px; line-height: 40px; padding: 0 20px; transition: background 0.2s; &:hover { background: rgba(255,255,255,0.1) !important; } .aplayer-list-index { color: #aaa !important; font-size: 13px; } .aplayer-list-title { color: #eee !important; font-size: 14px; } .aplayer-list-author { color: #999 !important; font-size: 12px; float: right; } &.aplayer-list-light { background: rgba(255,255,255,0.15) !important; .aplayer-list-title { color: #fff !important; font-weight: bold; } .aplayer-list-author { color: #ddd !important; } } } } }
 }
-
 .fade-enter-active, .fade-leave-active { transition: opacity 0.3s; }
 .fade-enter-from, .fade-leave-to { opacity: 0; }
 </style>
-
 <style>
 .music-notify-container {
   position: fixed; top: 60px; left: 0; width: 100%; display: flex; justify-content: center; z-index: 10000; pointer-events: none;
@@ -319,7 +282,6 @@ const parseLrc = async (lrcUrl) => {
 }
 .notify-capsule .text-info .name { font-weight: bold; }
 .notify-capsule .text-info .artist { opacity: 0.8; font-size: 12px; }
-
 .footer-lyric-bar {
   position: fixed; bottom: 0; left: 0; width: 100%; height: 46px; 
   display: flex; align-items: center; justify-content: center; z-index: 2000; pointer-events: none;
@@ -329,7 +291,6 @@ const parseLrc = async (lrcUrl) => {
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
   max-width: 85%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: 1px;
 }
-
 body.music-playing footer, body.music-playing .footer { opacity: 0 !important; transition: opacity 0.3s ease; }
 @keyframes rotate-cover { to { transform: rotate(360deg); } }
 .notify-slide-enter-active, .notify-slide-leave-active { transition: all 0.4s ease; }

@@ -4,22 +4,17 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    
     <link rel="icon" href="/icon/favicon.ico" />
     <link rel="apple-touch-icon" href="/icon/apple-touch-icon.png" />
     <link rel="bookmark" href="/icon/favicon.ico" />
-
     <link rel="preload" href="/font/Pacifico-Regular.ttf" as="font" type="font/ttf" crossorigin>
     <link rel="preload" href="/font/UnidreamLED.ttf" as="font" type="font/ttf" crossorigin>
-    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/color-thief/2.3.0/color-thief.umd.js"></script>
-
     <title>Clean Home</title>
     <meta name="author" content="Clean Home" />
     <meta name="description" content="A minimal personal homepage" />
     <meta name="keywords" content="个人主页,导航,博客,Vue3,Vite" />
     <meta name="theme-color" content="#424242" />
-    
     <style>
       body { 
         margin: 0; 
@@ -27,7 +22,6 @@
         background: #222; 
         font-family: sans-serif;
       }
-      
       #app-loading {
         position: fixed;
         top: 0;
@@ -42,7 +36,6 @@
         align-items: center;
         color: rgba(255, 255, 255, 0.9);
       }
-
       .loader {
         width: 48px;
         height: 48px;
@@ -54,20 +47,17 @@
         animation: rotation 1s linear infinite;
         margin-bottom: 15px;
       }
-
       .text {
         font-size: 1.1rem;
         letter-spacing: 2px;
         font-weight: bold;
       }
-
       @keyframes rotation {
         0% { transform: rotate(0deg); }
         100% { transform: rotate(360deg); }
       }
     </style>
   </head>
-
   <body>
     <div id="app">
       <div id="app-loading">
@@ -75,7 +65,6 @@
         <span class="text">Loading...</span>
       </div>
     </div>
-    
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>

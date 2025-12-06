@@ -4,7 +4,6 @@
       <Icon icon="ri:link" width="20" height="20" />
       <span class="title">{{ t('links.title') }}</span>
     </div>
-    
     <swiper
       :modules="[Pagination, Mousewheel]"
       :slides-per-view="1"
@@ -30,14 +29,12 @@
         </div>
       </swiper-slide>
     </swiper>
-
     <div class="more-btn-wrapper glass-card" @click="openNav">
       <Icon icon="ri:apps-line" width="20" height="20" />
       <span>常用网站</span>
     </div>
   </div>
 </template>
-
 <script setup>
 import { computed } from 'vue';
 import { Swiper, SwiperSlide } from 'swiper/vue';
@@ -47,12 +44,9 @@ import 'swiper/css/pagination';
 import { Icon } from '@iconify/vue';
 import { siteLinks } from '@/config';
 import { useI18n } from 'vue-i18n';
-import { useGlobalStore } from '@/store'; // 引入 Store
-
+import { useGlobalStore } from '@/store'; 
 const { t } = useI18n();
-const store = useGlobalStore(); // 初始化 Store
-
-// 计算链接分页
+const store = useGlobalStore(); 
 const siteLinksList = computed(() => {
   const result = [];
   for (let i = 0; i < siteLinks.length; i += 6) {
@@ -60,18 +54,14 @@ const siteLinksList = computed(() => {
   }
   return result;
 });
-
-// 打开导航弹窗的方法
 const openNav = () => {
   store.navOpenState = true;
 };
 </script>
-
 <style scoped lang="scss">
 .links-card {
   width: 100%;
   margin-top: 0;
-  
   .header {
     display: flex;
     align-items: center;
@@ -79,27 +69,22 @@ const openNav = () => {
     color: white;
     .title { margin-left: 8px; font-weight: bold; font-size: 1.1rem; }
   }
-
   .link-swiper {
     width: 100%;
     padding-bottom: 30px;
-    
     :deep(.swiper-pagination-bullet) {
       background: #fff;
       opacity: 0.4;
       &.swiper-pagination-bullet-active { opacity: 1; }
     }
   }
-
   .link-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 25px;
-    
     @media (max-width: 720px) {
       grid-template-columns: repeat(2, 1fr);
     }
-    
     .link-item {
       height: 120px;
       display: flex;
@@ -110,14 +95,11 @@ const openNav = () => {
       text-decoration: none;
       transition: 0.3s;
       padding: 0 10px;
-
       &:hover {
         background: rgba(0,0,0,0.4);
         transform: translateY(-5px);
       }
-
       .icon-box { margin-bottom: 10px; }
-      
       .name { 
         font-size: 1.1rem; 
         opacity: 0.9;
@@ -129,8 +111,6 @@ const openNav = () => {
       }
     }
   }
-
-  /* 更多按钮样式 */
   .more-btn-wrapper {
     margin-top: 5px;
     width: 100%;
@@ -143,20 +123,16 @@ const openNav = () => {
     transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
     color: rgba(255, 255, 255, 0.9);
     font-size: 1rem;
-    
     &:hover {
       background: rgba(0, 0, 0, 0.4);
       transform: translateY(-3px);
       color: #fff;
     }
-    
     &:active {
       transform: scale(0.98);
     }
   }
 }
-
-/* 复用毛玻璃卡片样式 */
 .glass-card {
   background: rgba(0, 0, 0, 0.25);
   backdrop-filter: blur(10px);

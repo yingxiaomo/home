@@ -17,18 +17,14 @@
       </div>
     </div>
   </Transition>
-
   <Background />
-
   <WelcomeNotify :class="{ 'app-hidden': store.navOpenState }" />
-
   <Transition name="slide-down">
     <div class="music-notify" v-show="musicNotifyShow" :class="{ 'app-hidden': store.navOpenState }">
       <Icon icon="ri:music-2-fill" width="16" height="16" style="margin-right:5px; display:inline-block; vertical-align:text-bottom;"/>
       <span>{{ store.playerTitle }} - {{ store.playerArtist }}</span>
     </div>
   </Transition>
-
   <transition name="fade">
     <main 
       class="main-container" 
@@ -40,7 +36,6 @@
           <InfoCard />
           <SocialLinks />
         </section>
-        
         <section class="right-col">
           <div class="func-row">
             <div class="switcher-box">
@@ -62,16 +57,13 @@
           <Links />
         </section>
       </div>
-      
       <footer class="footer">
         <Footer />
       </footer>
     </main>
   </transition>
-
   <NavModal />
 </template>
-
 <script setup>
 import { ref, watch } from 'vue';
 import { useGlobalStore } from '@/store';
@@ -88,12 +80,10 @@ import Footer from '@/components/Footer.vue';
 import { Icon } from '@iconify/vue';
 import WelcomeNotify from '@/components/WelcomeNotify.vue';
 import NavModal from '@/components/NavModal.vue'; 
-
 const store = useGlobalStore();
 const { t } = useI18n();
 const musicNotifyShow = ref(false);
 let notifyTimer = null;
-
 const particleCount = 50; 
 const particles = Array.from({ length: particleCount }, (_, i) => {
   const angle = Math.random() * 360; 
@@ -101,7 +91,6 @@ const particles = Array.from({ length: particleCount }, (_, i) => {
   const delay = Math.random() * 2; 
   const size = 2 + Math.random() * 3;
   const duration = 1.5 + Math.random();
-
   return {
     style: {
       '--angle': `${angle}deg`,
@@ -112,7 +101,6 @@ const particles = Array.from({ length: particleCount }, (_, i) => {
     }
   };
 });
-
 watch(() => store.playerTitle, (newVal) => {
   if (newVal) {
     musicNotifyShow.value = true;
@@ -121,35 +109,27 @@ watch(() => store.playerTitle, (newVal) => {
   }
 });
 </script>
-
 <style lang="scss" scoped>
-/* Scoped styles specific to Home view */
 .main-container {
   transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
   opacity: 1;
   transform: scale(1);
 }
-
 .music-notify, .welcome-notify {
   transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
   opacity: 1;
 }
-
 .app-hidden {
   opacity: 0 !important;
   transform: scale(0.95) !important; 
   pointer-events: none;
 }
-
-/* Specific overrides for centered notifications to prevent "jumping" when hidden */
 .music-notify.app-hidden {
   transform: translateX(-50%) scale(0.95) !important;
 }
-
 .welcome-notify.app-hidden {
-  transform: translateX(-50%) scale(0.75) !important; /* Slightly smaller than its default 0.8 */
+  transform: translateX(-50%) scale(0.75) !important; 
 }
-
 .loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(20, 20, 20, 0.75); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); color: #fff; display: flex; justify-content: center; align-items: center; z-index: 9999; overflow: hidden; }
 .loading-orb { position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.4; z-index: -1; animation: orb-float 8s infinite ease-in-out alternate; }
 .orb-1 { width: 300px; height: 300px; background: #4facfe; top: -50px; left: -50px; }

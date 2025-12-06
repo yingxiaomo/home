@@ -2,18 +2,14 @@
   <Transition name="modal">
     <div class="nav-modal" v-if="store.navOpenState" @click.self="close">
       <div class="modal-content glass-card">
-        
         <div class="header-title">
           <Icon icon="ri:compass-3-line" width="24" height="24" />
           <span>{{ t('nav.title') }}</span>
         </div>
-
         <button class="close-btn" @click="close" aria-label="Close">
           <Icon icon="ri:close-circle-fill" width="32" height="32" />
         </button>
-
         <div class="scroll-area">
-          
           <div class="search-box-wrapper sticky-top">
              <div class="search-box" :class="{ 'focused': isFocused }">
                 <div class="engine-switch" @click.stop="toggleEngineList">
@@ -35,7 +31,6 @@
                 </button>
               </div>
           </div>
-
           <Transition name="fade-content">
             <div v-show="contentReady">
               <div class="folder-group" v-for="(group, index) in categoryList" :key="index" :class="{ 'is-collapsed': group.collapsed }">
@@ -65,7 +60,6 @@
               </div>
             </div>
           </Transition>
-
           <div v-if="!contentReady" class="loading-placeholder">
             <Icon icon="ri:loader-4-line" class="spinner" width="30" />
           </div>
@@ -74,7 +68,6 @@
     </div>
   </Transition>
 </template>
-
 <script setup>
 import { ref, watch, onMounted } from 'vue';
 import { useGlobalStore } from '@/store';
@@ -82,7 +75,6 @@ import { navData } from '@/config/nav';
 import { searchEngines } from '@/config/search';
 import { Icon } from '@iconify/vue';
 import { useI18n } from 'vue-i18n';
-
 const store = useGlobalStore();
 const { t } = useI18n();
 const contentReady = ref(false);
@@ -92,36 +84,27 @@ const currentEngine = ref(searchEngines[0]);
 const showEngineList = ref(false);
 const isFocused = ref(false);
 const categoryList = ref(JSON.parse(JSON.stringify(navData)));
-
 const isUrl = (str) => str && (str.startsWith('http://') || str.startsWith('https://'));
-
 watch(() => store.navOpenState, (val) => { 
     if(val) { 
       contentReady.value = false; 
       setTimeout(()=> contentReady.value = true, 300); 
     }
 });
-
 onMounted(() => {
   document.addEventListener('click', () => { showEngineList.value = false; });
 });
-
 const close = () => store.navOpenState = false;
 const toggleEngineList = () => showEngineList.value = !showEngineList.value;
 const switchEngine = (eng) => currentEngine.value = eng;
 const onSearch = () => { if (keyword.value.trim()) window.open(currentEngine.value.url + encodeURIComponent(keyword.value), '_blank'); };
 const toggleGroup = (g) => g.collapsed = !g.collapsed;
 </script>
-
 <style scoped lang="scss">
-/* 基础布局 */
 .nav-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 2000; display: flex; justify-content: center; align-items: center; padding: 20px; }
 .modal-content { width: 100%; max-width: 850px; height: 80vh; background: rgba(30,30,30,0.85); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.15); border-radius: 16px; display: grid; grid-template-rows: auto 1fr; overflow: hidden; position: relative; }
-
 .header-title { grid-row: 1; display: flex; align-items: center; gap: 10px; padding: 20px; font-size: 1.2rem; color: #fff; font-weight: bold; border-bottom: 1px solid rgba(255,255,255,0.1); }
 .close-btn { position: absolute; top: 15px; right: 15px; background: none; border: none; color: rgba(255,255,255,0.5); cursor: pointer; z-index: 50; &:hover { color: #fff; } }
-
-/* 搜索框 */
 .search-box-wrapper { padding: 15px 25px; background: rgba(255,255,255,0.02); }
 .search-box { display: flex; align-items: center; background: rgba(0,0,0,0.3); border-radius: 8px; padding: 0 10px; border: 1px solid rgba(255,255,255,0.1); transition: 0.3s; }
 .search-box.focused { border-color: #4facfe; background: rgba(0,0,0,0.5); }
@@ -130,14 +113,10 @@ const toggleGroup = (g) => g.collapsed = !g.collapsed;
 .engine-dropdown { position: absolute; top: 35px; left: 0; background: #333; border-radius: 6px; padding: 5px; width: 120px; z-index: 100; border: 1px solid rgba(255,255,255,0.1); }
 .engine-item { padding: 8px; display: flex; gap: 8px; align-items: center; cursor: pointer; &:hover { background: rgba(255,255,255,0.1); } }
 .search-btn { width: 36px; display: flex; justify-content: center; background: none; border: none; color: #eee; cursor: pointer; &:disabled { opacity: 0.3; } }
-
-/* 滚动区域 */
 .scroll-area { 
     grid-row: 2; 
     overflow-y: auto; 
     padding-bottom: 30px; 
-
-    /* 自定义滚动条 */
     &::-webkit-scrollbar { width: 6px; height: 6px; }
     &::-webkit-scrollbar-track { background: transparent; }
     &::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 4px; }
@@ -159,8 +138,6 @@ const toggleGroup = (g) => g.collapsed = !g.collapsed;
 .folder-wrapper.wrapper-closed { grid-template-rows: 0fr; }
 .folder-inner { overflow: hidden; min-height: 0; }
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 20px; padding-top: 20px; }
-
-/* 导航卡片 */
 .nav-item { 
     display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 20px; 
     background: rgba(255,255,255,0.05); border-radius: 12px; text-decoration: none; 
@@ -172,11 +149,9 @@ const toggleGroup = (g) => g.collapsed = !g.collapsed;
     font-size: 0.9rem; text-align: center; color: #fff; width: 100%;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 5px;
 }
-
 .loading-placeholder { display: flex; justify-content: center; padding: 50px; color: #888; }
 .spinner { animation: spin 1s linear infinite; }
 @keyframes spin { 100% { transform: rotate(360deg); } }
-
 @media (max-width: 768px) {
   .modal-content { height: 95vh; width: 98%; }
 }

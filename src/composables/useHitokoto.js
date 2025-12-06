@@ -1,22 +1,17 @@
 import { ref } from 'vue';
-
 export function useHitokoto() {
   const hitokoto = ref({
     text: '正在获取一言...',
     from: '天天'
   });
-
   const fetchHitokoto = async (lang = 'zh') => {
-
     if (lang === 'en') {
       hitokoto.value = { text: 'Loading quote...', from: 'Daily' };
     } else {
       hitokoto.value = { text: '正在获取一言...', from: '天天' };
     }
-
     try {
       let res, data;
-      
       if (lang === 'en') {
         res = await fetch('https://dummyjson.com/quotes/random');
         data = await res.json();
@@ -25,7 +20,6 @@ export function useHitokoto() {
           from: data.author
         };
       } else {
-
         res = await fetch('https://v1.hitokoto.cn');
         data = await res.json();
         hitokoto.value = {
@@ -35,7 +29,6 @@ export function useHitokoto() {
       }
     } catch (e) {
       console.error('Quote fetch failed', e);
-
       if (lang === 'en') {
         hitokoto.value = { text: 'Life is bright, everything is cute.', from: 'Daily' };
       } else {
@@ -43,8 +36,6 @@ export function useHitokoto() {
       }
     }
   };
-
-
   let timer = null;
   const updateHitokoto = (lang = 'zh') => {
     if (timer) clearTimeout(timer);
@@ -52,6 +43,5 @@ export function useHitokoto() {
       fetchHitokoto(lang);
     }, 500); 
   };
-
   return { hitokoto, updateHitokoto };
 }

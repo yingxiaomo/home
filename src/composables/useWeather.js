@@ -2,7 +2,6 @@ import { ref, onMounted, watch } from 'vue';
 import dayjs from 'dayjs';
 import { apiEndpoints } from '@/config';
 import { useI18n } from 'vue-i18n'; 
-
 const AMAP_BASE_URL = 'https://restapi.amap.com';
 const DEFAULT_ADCODE = '110000'; 
 const DEFAULT_CITY_NAME = '北京';
@@ -24,7 +23,6 @@ const userGeoAPIs = apiEndpoints.userGeoHosts
         return null;
       }
     }));
-
 const FREE_IP_APIS = [
   { 
     name: 'Vore.top', 
@@ -55,7 +53,6 @@ const FREE_IP_APIS = [
     }
   }
 ];
-
 const weatherData = ref({
   city: '定位中...',
   weather: '--',
@@ -65,7 +62,6 @@ const weatherData = ref({
 });
 const loading = ref(true); 
 let isInitialized = false;
-
 const getLocationByAmap = async (key) => {
   if (!key) return null;
   try {
@@ -83,14 +79,12 @@ const getLocationByAmap = async (key) => {
   }
   return null;
 };
-
 const getLocationByUserApi = async (lang = 'zh') => {
     console.log(`🔄 尝试自建兜底 IP 定位 (lang=${lang})...`);
     for (const api of userGeoAPIs) {
         try {
             const urlObj = new URL(api.url);
             urlObj.searchParams.append('lang', lang);
-            
             const res = await fetch(urlObj.toString());
             const data = await res.json();
             if (data && data.city) { 
@@ -109,7 +103,6 @@ const getLocationByUserApi = async (lang = 'zh') => {
     }
     return null;
 };
-
 const getLocationByFreeApi = async () => {
   console.log('🌍 尝试免费第三方 IP 定位 (Vore/Xxapi)...');
   for (const api of FREE_IP_APIS) {
@@ -118,16 +111,13 @@ const getLocationByFreeApi = async () => {
       const timeoutId = setTimeout(() => controller.abort(), 2000); 
       const res = await fetch(api.url, { signal: controller.signal });
       clearTimeout(timeoutId);
-
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       const result = api.handler(data);
       const visitorIP = result?.ip;
-
       if (visitorIP) {
           console.log(`📡 你的 IP: ${visitorIP} (来源: ${api.name})`);
       }
-
       if (result && result.city) {
         console.log(`✅ ${api.name} 定位成功:`, result.city);
         const cleanCity = result.city.replace(/市$/, ''); 
@@ -140,19 +130,16 @@ const getLocationByFreeApi = async () => {
   }
   return null;
 };
-
 const getQWeather = async (location, key, host, lang = 'zh') => {
   try {
     const geoUrl = `${host}/geo/v2/city/lookup?location=${encodeURIComponent(location)}&key=${key}&lang=${lang}`;
     const geoRes = await fetch(geoUrl);
     const geoData = await geoRes.json();
-
     if (geoData.code === '200' && geoData.location?.length > 0) {
       const locInfo = geoData.location[0];
       const weatherUrl = `${host}/v7/weather/now?location=${locInfo.id}&key=${key}&lang=${lang}`;
       const weatherRes = await fetch(weatherUrl);
       const weatherDataRes = await weatherRes.json();
-
       if (weatherDataRes.code === '200') {
         const now = weatherDataRes.now;
         return {
@@ -172,13 +159,11 @@ const getQWeather = async (location, key, host, lang = 'zh') => {
   }
   return { success: false };
 };
-
 const getAmapWeather = async (location, key) => {
   try {
     const url = `${AMAP_BASE_URL}/v3/weather/weatherInfo?city=${encodeURIComponent(location)}&key=${key}&extensions=base`;
     const res = await fetch(url);
     const data = await res.json();
-
     if (data.status === '1' && data.lives?.length > 0) {
       const live = data.lives[0];
       return {
@@ -197,19 +182,16 @@ const getAmapWeather = async (location, key) => {
   }
   return { success: false };
 };
-
 const getVoreWeather = async () => {
   try {
     const url = 'https://api.vore.top/api/Weather';
     const res = await fetch(url);
     const data = await res.json();
-    
     if (data.code === 200 && data.data) {
       let d = data.data;
       if (d.tianqi && typeof d.tianqi === 'object') {
         d = d.tianqi;
       }
-
       return {
         success: true,
         data: {
@@ -226,7 +208,6 @@ const getVoreWeather = async () => {
   }
   return { success: false };
 };
-
 const getUserWeather = async (host, lat, lon, city, lang = 'zh') => {
   try {
     const params = new URLSearchParams();
@@ -236,11 +217,9 @@ const getUserWeather = async (host, lat, lon, city, lang = 'zh') => {
     }
     params.append('city', city);
     params.append('lang', lang); 
-    
     const url = `${host}/api/weather?${params.toString()}`;
     const res = await fetch(url);
     const data = await res.json();
-    
     if (data.status === 'ok' && data.data) {
       const d = data.data;
       const source = data.source || '自建源'; 
@@ -261,21 +240,16 @@ const getUserWeather = async (host, lat, lon, city, lang = 'zh') => {
   }
   return { success: false };
 };
-
 const fetchWeather = async (lang = 'zh') => {
   loading.value = true;
   weatherData.value.city = lang === 'en' ? 'Locating...' : '定位中...'; 
-  
   const amapKey = import.meta.env.VITE_AMAP_KEY;
   const qweatherKey = import.meta.env.VITE_QWEATHER_KEY;
   const qweatherHost = import.meta.env.VITE_QWEATHER_HOST;
-  
   let locInfo = null;
-
   if (lang === 'en') {
       console.log('🔄 [EN] 优先尝试自建 API 定位...');
       locInfo = await getLocationByUserApi('en');
-      
       if (!locInfo) {
           console.log('⚠️ [EN] 自建定位失败，尝试免费 API (可能返回中文)...');
           locInfo = await getLocationByFreeApi();
@@ -291,11 +265,9 @@ const fetchWeather = async (lang = 'zh') => {
           locInfo = await getLocationByUserApi('zh');
       }
   }
-    
   const locationToUse = locInfo ? locInfo.location : DEFAULT_ADCODE;
   let cityName = locInfo ? locInfo.cityName : (lang === 'en' ? 'Beijing' : DEFAULT_CITY_NAME); 
   let result = null;
-
   if (lang === 'en') {
       const fallbackHost = locInfo?.host || apiEndpoints.userGeoHosts[0];
       if (fallbackHost) {
@@ -306,7 +278,6 @@ const fetchWeather = async (lang = 'zh') => {
               console.log(`🌤️ [EN] 天气来源: 自建 (${result.source})`);
           }
       }
-
       if (!result && qweatherKey && qweatherHost) {
           const qRes = await getQWeather(locationToUse, qweatherKey, qweatherHost, 'en');
           if (qRes.success) {
@@ -314,9 +285,7 @@ const fetchWeather = async (lang = 'zh') => {
               console.log('🌤️ [EN] 天气来源: 和风');
           }
       }
-      
   } else {
-      
       if (!result && qweatherKey && qweatherHost) {
         const qRes = await getQWeather(locationToUse, qweatherKey, qweatherHost, 'zh');
         if (qRes.success) {
@@ -324,7 +293,6 @@ const fetchWeather = async (lang = 'zh') => {
           console.log('🌤️ 天气来源: 和风');
         }
       }
-  
       if (!result && amapKey) {
         const aRes = await getAmapWeather(locationToUse, amapKey);
         if (aRes.success) {
@@ -332,7 +300,6 @@ const fetchWeather = async (lang = 'zh') => {
           console.log('🌤️ 天气来源: 高德');
         }  
       }
-
       if (!result) {
         console.log('🔄 尝试 Vore IP 天气...');
         const vRes = await getVoreWeather();
@@ -344,7 +311,6 @@ const fetchWeather = async (lang = 'zh') => {
           console.log('🌤️ 天气来源: Vore.top (IP)');
         }
       }
-    
       if (!result) {
           const fallbackHost = locInfo?.host || apiEndpoints.userGeoHosts[0];
           if (fallbackHost) {  
@@ -357,7 +323,6 @@ const fetchWeather = async (lang = 'zh') => {
           }
       }
   }
-
   if (result) {
     weatherData.value = result;
   } else {
@@ -370,26 +335,20 @@ const fetchWeather = async (lang = 'zh') => {
       updateTime: ''
     };
   }
-  
   loading.value = false;
 };
-
 export const useWeather = () => {
   const { locale } = useI18n(); 
-
   if (!isInitialized) {
     onMounted(async () => {
       await fetchWeather(locale.value);
       setInterval(() => fetchWeather(locale.value), 30 * 60 * 1000); 
     });
-
     watch(locale, (newLang) => {
         console.log(`🌐 语言切换为 ${newLang}，刷新天气...`);
         fetchWeather(newLang);
     });
-
     isInitialized = true;
   }
-  
   return { weatherData, loading, refreshWeather: () => fetchWeather(locale.value) };
 };
