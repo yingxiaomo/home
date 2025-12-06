@@ -20,10 +20,17 @@
           </div>
           <div 
             class="tab-item" 
-            :class="{ 'active': currentView === 'add' }"
-            @click="currentView = 'add'"
+            :class="{ 'active': currentView === 'add-link' }"
+            @click="currentView = 'add-link'"
           >
-            <Icon icon="ri:add-line" /> 添加导航
+            <Icon icon="ri:add-line" /> 批量添加链接
+          </div>
+          <div 
+            class="tab-item" 
+            :class="{ 'active': currentView === 'add-folder' }"
+            @click="currentView = 'add-folder'"
+          >
+            <Icon icon="ri:folder-add-line" /> 添加文件夹
           </div>
         </div>
 
@@ -33,9 +40,9 @@
 
         <div class="scroll-area">
           <Transition name="fade-content" mode="out-in">
-            <div v-if="currentView === 'search' || currentView === 'nav'" :key="currentView">
+            <div v-if="currentView === 'search' || currentView === 'nav'" :key="'search-nav'">
               
-              <div class="search-box-wrapper">
+              <div class="search-box-wrapper" v-if="currentView === 'search'">
                  <div class="search-box" :class="{ 'focused': isFocused }">
                     <div class="engine-switch" @click.stop="toggleEngineList">
                       <Icon :icon="currentEngine.icon" width="20" height="20" class="engine-icon" />
@@ -117,30 +124,12 @@
 
             </div>
 
-            <div v-else-if="currentView === 'add'" :key="'add-nav'" class="add-form-container">
-              <h3 class="form-title">添加新链接（提交后 Cloudflare Pages 会自动部署）</h3>
+            <div v-else-if="currentView === 'add-link'" :key="'add-link'" class="add-form-container">
+              <h3 class="form-title">批量添加链接（提交后 Cloudflare Pages 会自动部署）</h3>
+              
               <div class="form-item">
-                <label for="name">名称 (Name) *</label>
-                <input id="name" type="text" v-model="newLink.name" placeholder="例如：我的博客" />
-              </div>
-              <div class="form-item">
-                <label for="url">链接 (URL) *</label>
-                <input id="url" type="url" v-model="newLink.url" placeholder="例如：https://www.google.com" />
-              </div>
-              <div class="form-item">
-                <label for="icon">图标 (Iconify Code / URL)</label>
-                <input id="icon" type="text" v-model="newLink.icon" placeholder="自动识别中..." />
-                
-                <span v-if="newLink.icon" class="icon-preview">
-                  <Icon v-if="!isUrl(newLink.icon)" :icon="newLink.icon" width="24" />
-                  <img v-else :src="newLink.icon" alt="Icon Preview" width="24" height="24" class="favicon-img" />
-                </span>
-                
-                <span v-if="isAutoIcon" class="auto-tip">（已自动识别图标）</span>
-              </div>
-               <div class="form-item">
                 <label for="group">分组 (Category) *</label>
-                <select id="group" v-model="selectedGroupTitle">
+                <select id="group" v-model="selectedGroupTitle" class="high-contrast-select">
                   <option 
                     v-for="(group, index) in categoryList" 
                     :key="index" 
@@ -151,14 +140,28 @@
                 </select>
               </div>
 
+              <div class="form-item bulk-input">
+                <label for="bulk-links">
+                  批量添加链接 (格式: **名称 | URL | IconCode/URL**) *
+                  <span class="auto-tip" v-if="parsedLinks.length > 0">（已解析 {{ parsedLinks.length }} 个有效链接）</span>
+                  <span class="auto-tip error" v-if="bulkError">{{ bulkError }}</span>
+                </label>
+                <textarea 
+                  id="bulk-links" 
+                  v-model="bulkInput" 
+                  rows="8" 
+                  placeholder="每行输入一个链接，例如：&#10;Google | https://google.com | ri:google-fill&#10;Bing | https://bing.com | https://icons.duckduckgo.com/ip3/bing.com.ico"
+                ></textarea>
+              </div>
+
               <div class="form-actions">
                 <button 
                   class="save-btn" 
                   @click="onSubmitNewLink"
-                  :disabled="!newLink.name || !newLink.url || isSaving || !selectedGroupTitle"
+                  :disabled="parsedLinks.length === 0 || isSaving || !selectedGroupTitle"
                 >
                   <Icon v-if="isSaving" icon="ri:loader-4-line" class="spinner-sm" />
-                  <span v-else>添加到 {{ selectedGroupTitle }}</span>
+                  <span v-else>批量添加到 {{ selectedGroupTitle }} ({{ parsedLinks.length }} 条)</span>
                 </button>
               </div>
 
@@ -166,9 +169,40 @@
                   {{ saveMessage }}
               </p>
             </div>
+
+
+            <div v-else-if="currentView === 'add-folder'" :key="'add-folder'" class="add-form-container">
+              <h3 class="form-title">添加新文件夹（将插入到导航列表末尾）</h3>
+              
+              <div class="form-item">
+                <label for="folder-title">文件夹名称 (Title) *</label>
+                <input id="folder-title" type="text" v-model="newFolder.title" placeholder="例如：我的项目" />
+              </div>
+
+              <div class="form-item">
+                <label for="folder-icon">图标 (Iconify Code)</label>
+                <input id="folder-icon" type="text" v-model="newFolder.icon" placeholder="例如：ri:box-3-line" />
+                <span v-if="newFolder.icon" class="icon-preview"><Icon :icon="newFolder.icon" width="24" /></span>
+              </div>
+
+              <div class="form-actions">
+                <button 
+                  class="save-btn" 
+                  @click="onSubmitNewFolder"
+                  :disabled="!newFolder.title || isSaving"
+                >
+                  <Icon v-if="isSaving" icon="ri:loader-4-line" class="spinner-sm" />
+                  <span v-else>创建文件夹</span>
+                </button>
+              </div>
+              
+              <p v-if="saveMessage" :class="['message', isSaving ? 'info' : 'error']">
+                  {{ saveMessage }}
+              </p>
+            </div>
           </Transition>
 
-          <div v-if="!contentReady && currentView !== 'add'" class="loading-placeholder">
+          <div v-if="!contentReady && currentView !== 'add-link' && currentView !== 'add-folder'" class="loading-placeholder">
             <Icon icon="ri:loader-4-line" class="spinner" width="30" />
           </div>
         </div>
@@ -187,7 +221,7 @@ import { Icon } from '@iconify/vue';
 const store = useGlobalStore();
 const contentReady = ref(false);
 const searchInputRef = ref(null);
-const currentView = ref('search'); 
+const currentView = ref('nav'); // 默认显示导航列表，因为搜索框独立了
 
 // 搜索相关状态
 const keyword = ref('');
@@ -195,12 +229,18 @@ const currentEngine = ref(searchEngines[0]);
 const showEngineList = ref(false);
 const isFocused = ref(false);
 
-// 添加导航相关状态
-const newLink = ref({ name: '', url: '', icon: 'ri:link' });
+// 批量添加链接状态
+const bulkInput = ref('');
+const bulkError = ref('');
+
+// 添加文件夹相关状态
+const newFolder = ref({ title: '', icon: 'ri:folder-line' });
+
+// 通用状态
 const selectedGroupTitle = ref(navData[0]?.title || ''); 
 const isSaving = ref(false);
 const saveMessage = ref('');
-const isAutoIcon = ref(false); 
+
 
 // 链接分类数据
 const categoryList = ref(navData.map(item => ({
@@ -213,49 +253,34 @@ const isUrl = (str) => {
   return str.startsWith('http://') || str.startsWith('https://') || str.startsWith('//');
 };
 
-// 工具函数：从 URL 中提取域名，用于 Favicon CDN
-const getDomain = (url) => {
-  try {
-    const parsedUrl = new URL(url.startsWith('http') ? url : `https://${url}`);
-    return parsedUrl.hostname;
-  } catch (e) {
-    return '';
-  }
-};
+// 🌟 解析批量输入的链接
+const parsedLinks = computed(() => {
+  const lines = bulkInput.value.trim().split('\n').filter(line => line.trim() !== '');
+  const links = [];
+  bulkError.value = '';
 
-// 🌟 核心逻辑：自动识别图标
-watch(() => newLink.value.url, (newUrl) => {
-  if (newUrl.length < 5) {
-    newLink.value.icon = 'ri:link';
-    isAutoIcon.value = false;
-    return;
-  }
-  
-  const domain = getDomain(newUrl);
-  if (domain) {
-    // 使用 DuckDuckGo 的 Favicon 服务，它提供了一个稳定的 CDN 接口
-    const faviconUrl = `https://icons.duckduckgo.com/ip3/${domain}.ico`;
+  for (const line of lines) {
+    const parts = line.split('|').map(part => part.trim());
     
-    // 尝试加载图标
-    const img = new Image();
-    img.src = faviconUrl;
-    img.onload = () => {
-      // 成功加载图标，自动填充 URL
-      newLink.value.icon = faviconUrl;
-      isAutoIcon.value = true;
-    };
-    img.onerror = () => {
-      // 加载失败，恢复默认或 Iconify 图标
-      if (!isUrl(newLink.value.icon) || isAutoIcon.value) {
-        newLink.value.icon = 'ri:link';
-        isAutoIcon.value = false;
-      }
-    };
-  } else {
-    // URL 无效，重置图标
-    newLink.value.icon = 'ri:link';
-    isAutoIcon.value = false;
+    if (parts.length < 2) {
+      bulkError.value = '格式错误：每行至少需要 [名称 | URL]';
+      return [];
+    }
+
+    const [name, url, icon = 'ri:link'] = parts;
+
+    if (!url.startsWith('http')) {
+      bulkError.value = 'URL 必须以 http:// 或 https:// 开头';
+      return [];
+    }
+
+    links.push({
+      name,
+      url,
+      icon: icon.trim() || 'ri:link'
+    });
   }
+  return links;
 });
 
 
@@ -264,25 +289,25 @@ watch(() => store.navOpenState, (isOpen) => {
   if (isOpen) {
     contentReady.value = false;
     setTimeout(() => { contentReady.value = true; }, 300);
-    nextTick(() => { if (searchInputRef.value) searchInputRef.value.focus(); });
   } else {
     contentReady.value = false;
     showEngineList.value = false;
     keyword.value = '';
-    currentView.value = 'search'; 
+    currentView.value = 'nav';
   }
 });
 
-// 切换视图时，重新处理 contentReady 状态
+// 切换视图时，重置状态
 watch(currentView, (newView) => {
-  if (newView !== 'add') {
+  if (newView !== 'add-link' && newView !== 'add-folder') {
     contentReady.value = false;
     setTimeout(() => { contentReady.value = true; }, 300);
   } else {
-     // 在切换到添加页面时，确保表单数据是干净的
-    newLink.value = { name: '', url: '', icon: 'ri:link' };
-    saveMessage.value = '';
-    isAutoIcon.value = false;
+    // 重置表单状态
+    bulkInput.value = '';
+    newFolder.value = { title: '', icon: 'ri:folder-line' };
+    saveMessage.value = ''; 
+    bulkError.value = '';
   }
 });
 
@@ -298,57 +323,96 @@ const onSearch = () => {
 };
 
 
-// 提交新链接 - 修复后的逻辑，用于显示详细的 500 错误
+// 提交新链接（批量处理）
 const onSubmitNewLink = async () => {
-  if (!newLink.value.name.trim() || !newLink.value.url.trim() || !selectedGroupTitle.value) return;
+  if (parsedLinks.value.length === 0 || !selectedGroupTitle.value) return;
 
   isSaving.value = true;
-  saveMessage.value = '正在提交至 GitHub API... (请等待自动部署)';
+  saveMessage.value = `正在提交 ${parsedLinks.value.length} 个链接至 GitHub API... (请等待自动部署)`;
   
   try {
+    // ⚠️ 负载结构现在是数组 links
     const payload = {
-      name: newLink.value.name,
-      url: newLink.value.url,
-      icon: newLink.value.icon, 
+      links: parsedLinks.value, 
       groupTitle: selectedGroupTitle.value,
     };
 
     const response = await fetch('/api/add-link', { 
       method: 'POST',
-      headers: { 
-          'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
 
-    const data = await response.json(); // 尝试解析 JSON 响应体，无论状态码是否为 200
+    const data = await response.json(); 
 
-    if (response.ok) { // 检查 HTTP 状态码是否为 200-299 之间
-        saveMessage.value = data.message || '链接添加成功！请等待部署完成。';
+    if (response.ok) { 
+        saveMessage.value = data.message || `批量添加链接成功！共 ${parsedLinks.value.length} 条。`;
         
-        // 成功后清空表单并跳转到导航列表
         setTimeout(() => {
-            newLink.value = { name: '', url: '', icon: 'ri:link' };
-            isAutoIcon.value = false;
+            bulkInput.value = '';
             saveMessage.value = '';
             currentView.value = 'nav'; 
         }, 2500);
         
     } else {
-        // 捕获 4xx/5xx 响应，并显示后端返回的详细错误信息
         saveMessage.value = `❌ 错误 (${response.status}): ${data.message}`; 
     }
     
   } catch (error) {
-    // 捕获网络错误或 JSON 解析失败
     saveMessage.value = `网络连接或数据解析错误: ${error.message}`;
   } finally {
     isSaving.value = false;
   }
 };
 
+// 提交新文件夹
+const onSubmitNewFolder = async () => {
+  if (!newFolder.value.title.trim()) return;
+
+  isSaving.value = true;
+  saveMessage.value = '正在提交新文件夹至 GitHub API...';
+  
+  try {
+    const payload = {
+      title: newFolder.value.title,
+      icon: newFolder.value.icon, 
+    };
+
+    const response = await fetch('/api/add-group', { // 调用 add-group API
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+        saveMessage.value = data.message || '文件夹添加成功！请等待部署完成。';
+        
+        setTimeout(() => {
+            newFolder.value = { title: '', icon: 'ri:folder-line' };
+            saveMessage.value = '';
+            currentView.value = 'nav'; 
+            window.location.reload(); 
+        }, 2500);
+        
+    } else {
+        saveMessage.value = `❌ 错误 (${response.status}): ${data.message}`; 
+    }
+    
+  } catch (error) {
+    saveMessage.value = `网络连接或数据解析错误: ${error.message}`;
+  } finally {
+    isSaving.value = false;
+  }
+};
+
+
 onMounted(() => {
   document.addEventListener('click', () => { showEngineList.value = false; });
+  if (!selectedGroupTitle.value && categoryList.value.length > 0) {
+     selectedGroupTitle.value = categoryList.value[0].title;
+  }
 });
 
 const close = () => { store.navOpenState = false; };
@@ -356,6 +420,7 @@ const toggleGroup = (group) => { group.collapsed = !group.collapsed; };
 </script>
 
 <style scoped lang="scss">
+/* --- 样式保持不变，新增了表单项样式 --- */
 .nav-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); z-index: 2000; display: flex; justify-content: center; align-items: center; padding: 20px; }
 .modal-content { width: 100%; max-width: 850px; height: 80vh; background: rgba(30, 30, 30, 0.85); contain: content; border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 16px; display: grid; grid-template-rows: auto 1fr; overflow: hidden; box-shadow: 0 25px 50px rgba(0,0,0,0.5); transform: translateZ(0); }
 
@@ -449,6 +514,7 @@ const toggleGroup = (group) => { group.collapsed = !group.collapsed; };
   .link-name { font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
 }
 
+/* --- 表单区域样式 --- */
 .add-form-container {
   padding: 20px; color: #fff; max-width: 500px; margin: 0 auto;
   .form-title { font-size: 1.1rem; font-weight: bold; margin-bottom: 20px; color: rgba(255, 255, 255, 0.9); }
@@ -457,15 +523,22 @@ const toggleGroup = (group) => { group.collapsed = !group.collapsed; };
     position: relative;
 
     label { display: block; font-size: 0.9rem; color: rgba(255, 255, 255, 0.7); margin-bottom: 5px; font-weight: 500; }
-    input, select {
+    input, select, textarea { // 适配 textarea
       width: 100%; padding: 12px; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2);
       border-radius: 6px; color: #fff; font-size: 1rem; outline: none; transition: border-color 0.2s;
       -webkit-appearance: none; appearance: none;
+      
+      color: #fff; 
+      
       &:focus { border-color: #4facfe; }
     }
     select {
       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='24' height='24'%3E%3Cpath fill='white' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
       background-repeat: no-repeat; background-position: right 10px top 50%; padding-right: 30px;
+    }
+    textarea {
+      resize: vertical;
+      line-height: 1.4;
     }
     .icon-preview {
         position: absolute; top: 32px; right: 10px; 
