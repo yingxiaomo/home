@@ -142,6 +142,83 @@ app.post('/api/upload', checkAuth, upload.single('file'), async (req, res) => {
     }
 });
 
+// 天气接口代理 (适配 Docker/Node 环境)
+app.get('/api/weather', async (req, res) => {
+    try {
+        // 1. 获取用户 IP
+        let clientIP = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '';
+        if (clientIP.includes(',')) clientIP = clientIP.split(',')[0].trim();
+        
+        // 2. 环境变量
+        const qweatherKey = process.env.VITE_QWEATHER_KEY;
+        const qweatherHost = process.env.VITE_QWEATHER_HOST || 'https://devapi.qweather.com';
+
+        if (!qweatherKey) {
+            return res.status(500).json({ success: false, message: 'Server Config Error: Missing QWeather Key' });
+        }
+
+        // 3. 第三方 IP 定位 (Vore)
+        let locationID = null;
+        let cityName = '未知城市';
+
+        try {
+            const voreUrl = `https://api.vore.top/api/IPdata?ip=${clientIP}`;
+            const voreRes = await fetch(voreUrl);
+            const voreData = await voreRes.json();
+            
+            if (voreData.code === 200 && voreData.ipdata) {
+                cityName = voreData.ipdata.info2 || voreData.ipdata.info1;
+                // 去掉 "市" 后缀，增加搜索命中率
+                cityName = cityName.replace(/市$/, '');
+            }
+        } catch (e) {
+            console.warn('Vore IP lookup failed:', e.message);
+        }
+
+        if (!cityName || cityName === '未知城市') {
+            cityName = '北京';
+        }
+
+        // 4. 和风天气 - 城市搜索 API
+        const geoUrl = `${qweatherHost}/geo/v2/city/lookup?location=${encodeURIComponent(cityName)}&key=${qweatherKey}&lang=zh`;
+        const geoRes = await fetch(geoUrl);
+        const geoData = await geoRes.json();
+
+        if (geoData.code === '200' && geoData.location && geoData.location.length > 0) {
+            locationID = geoData.location[0].id;
+            cityName = geoData.location[0].name;
+        } else {
+            return res.status(404).json({ success: false, message: 'City Lookup Failed' });
+        }
+
+        // 5. 和风天气 - 实况 API
+        const weatherUrl = `${qweatherHost}/v7/weather/now?location=${locationID}&key=${qweatherKey}&lang=zh`;
+        const weatherRes = await fetch(weatherUrl);
+        const weatherData = await weatherRes.json();
+
+        if (weatherData.code === '200') {
+            const now = weatherData.now;
+            return res.json({
+                success: true,
+                data: {
+                    city: cityName,
+                    weather: now.text,
+                    temperature: now.temp,
+                    wind: `${now.windDir} ${now.windScale}级`,
+                    updateTime: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false }),
+                    ip: clientIP,
+                    source: '和风天气 (Node Proxy)'
+                }
+            });
+        } else {
+            return res.status(500).json({ success: false, message: `QWeather API Error: ${weatherData.code}` });
+        }
+
+    } catch (error) {
+        res.status(500).json({ success: false, message: `Server Error: ${error.message}` });
+    }
+});
+
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
