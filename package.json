@@ -1,8 +1,12 @@
 {
-  "name": "home",
-  "private": true,
-  "version": "0.0.0",
-  "type": "module",
+"name": "home", 
+  "description": "一个极简、高性能的个人主页，基于 Vue3 和 Vite 构建。",
+  "keywords": [
+    "vue3",
+    "vite",
+    "homepage",
+    "personal-website"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "vite build",
