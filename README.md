@@ -284,5 +284,6 @@ docker run -p 44355:44355 -d home
 - **原始设计: [imsyy/home](https://github.com/imsyy/home)**
 - **[VORE-API](https://github.com/imsyy/home)**
 - **[小小API](https://xxapi.cn/)**
-- **图标：[Remix Icon via Iconify](https://icon-sets.iconify.design/)**:
+- **图标：[Remix Icon via Iconify](https://icon-sets.iconify.design/ri/)**
+- **图标：[Remix Icon via Iconify](https://icon-sets.iconify.design/mingcute/?keyword=MingCute+Icon)**
 - **访客统计: 不蒜子**

@@ -132,13 +132,13 @@ export const socialLinks = [
 export const siteLinks = [
   { 
     name: "博客", 
-    link: "https://blog.example.com", 
+    link: "https://blog.ovoxo.cc", 
     icon: "ri:book-2-line" 
   },
   { 
-    name: "网盘", 
-    link: "https://cloud.example.com", 
-    icon: "ri:cloud-line" 
+    name: "导航页", 
+    link: "https://nav.ovoxo.cc", 
+    icon: "ri--compass-3-line" 
   },
   { 
     name: "音乐", 
