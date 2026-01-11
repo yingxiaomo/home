@@ -223,16 +223,28 @@ docker run -p 44355:80 -d home
 ```
 
 ### 3. Docker Compose 部署 (推荐)
-如果您已经安装了 Docker Compose，可以使用以下方式一键部署：
+本项目提供了 `docker-compose.yml`，集成 **Watchtower** 实现镜像自动更新。
 
 ```bash
-# 启动
+# 启动服务
 docker compose up -d
-# 停止
+
+# 查看日志
+docker compose logs -f
+
+# 停止服务
 docker compose down
-# 更新镜像并重启
-docker compose pull && docker compose up -d
 ```
+
+**自动更新机制**：
+容器内置了 Watchtower 服务，每 5 分钟检查一次 DockerHub 上的最新镜像。一旦有新版本发布，它会自动拉取并平滑重启应用，无需手动干预。
+
+### 4. 自动化构建 (CI/CD)
+本项目配置了 GitHub Actions。如果您 Fork 了本项目，想要开启自动构建 Docker 镜像：
+1.  在仓库 Settings -> Secrets and variables -> Actions 中添加：
+    *   `DOCKERHUB_USERNAME`: 您的 DockerHub 用户名
+    *   `DOCKERHUB_TOKEN`: 您的 DockerHub Access Token
+2.  每次 push 代码到 `main` 分支，GitHub 会自动构建并推送到您的 DockerHub 仓库。
 
 
 
