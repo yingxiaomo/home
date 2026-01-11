@@ -66,6 +66,15 @@ const handleError = () => {
   }
 };
 
+// 超时兜底：防止图片加载过慢一直卡 Loading
+setTimeout(() => {
+  if (!store.imgLoadStatus) {
+    console.warn('⚠️ 背景图加载超时，强制进入页面');
+    store.setImgLoadStatus(true);
+    store.backgroundShow = true;
+  }
+}, 5000); // 5秒后强制解除 Loading
+
 onMounted(() => {
   if (themeConfig.background.type === 'api') {
     loadApiImage();
