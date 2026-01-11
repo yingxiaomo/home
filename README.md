@@ -20,6 +20,10 @@
 
   <p>
     <a href="https://ovoxo.cc">🔴 演示地址</a>
+    <span> | </span>
+    <a href="https://pages.cloudflare.com/deploy?repo=https://github.com/yingxiaomo/home">
+      <img src="https://devtools.com/badge/deploy-to-cloudflare-pages.svg" alt="Deploy to Cloudflare Pages" />
+    </a>
   </p>
 </div>
 
@@ -154,7 +158,7 @@ npm run build
 构建完成后，会在项目根目录生成一个 `dist` 文件夹，将文件夹上传到服务器即可。
 
 #### 2. 配置 Nginx
-确保您的服务器已安装 Nginx。修改 Nginx 配置文件（通常位于 `/etc/nginx/nginx.conf` 或 `/etc/nginx/conf.d/` 下），参考项目提供的 `nginx.conf`：
+确保您的服务器已安装 Nginx。修改 Nginx 配置文件（通常位于 `/etc/nginx/conf.d/` 目录下创建一个新的 `.conf` 文件，或者合并到您的主配置中），参考项目提供的 `nginx.conf`：
 
 ```nginx
 server {
@@ -215,7 +219,7 @@ docker build -t home .
 运行容器并映射端口（例如映射到宿主机 8080 端口）：
 
 ```bash
-docker run -p 44355:44355 -d home
+docker run -p 44355:80 -d home
 ```
 
 
