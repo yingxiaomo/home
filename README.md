@@ -1,4 +1,4 @@
-<div align="center">
+﻿<div align="center">
   <img src="./public/icon/logo.png" width="120" height="120" alt="Clean Home Logo">
   <h1>Clean Home</h1>
   <p>
@@ -7,23 +7,19 @@
   <p>极简风格个人主页 | 导航页 | 仪表盘</p>
 
   <p>
-    <a href="https://github.com/yingxiaomo/clean-home/blob/main/LICENSE">
-      <img src="https://img.shields.io/github/license/yingxiaomo/clean-home?style=flat-square" alt="license" />
+    <a href="https://github.com/yingxiaomo/home/blob/main/LICENSE">
+      <img src="https://img.shields.io/github/license/yingxiaomo/home?style=flat-square" alt="license" />
     </a>
-    <a href="https://github.com/yingxiaomo/clean-home/stargazers">
-      <img src="https://img.shields.io/github/stars/yingxiaomo/clean-home?style=flat-square" alt="stars" />
+    <a href="https://github.com/yingxiaomo/home/stargazers">
+      <img src="https://img.shields.io/github/stars/yingxiaomo/home?style=flat-square" alt="stars" />
     </a>
-    <a href="https://github.com/yingxiaomo/clean-home/network/members">
-      <img src="https://img.shields.io/github/forks/yingxiaomo/clean-home?style=flat-square" alt="forks" />
+    <a href="https://github.com/yingxiaomo/home/network/members">
+      <img src="https://img.shields.io/github/forks/yingxiaomo/home?style=flat-square" alt="forks" />
     </a>
   </p>
 
   <p>
-    <a href="https://ovoxo.cc">🔴 演示地址</a>
-    <span> | </span>
-    <a href="https://pages.cloudflare.com/deploy?repo=https://github.com/yingxiaomo/home">
-      <img src="https://devtools.com/badge/deploy-to-cloudflare-pages.svg" alt="Deploy to Cloudflare Pages" />
-    </a>
+    <a href="https://ovoxo.cc">🔴 演示地址 (Vercel)</a> / <a href="https://home.396638.xyz">🔵 演示地址 (Cloudflare)</a>
   </p>
 </div>
 
@@ -310,8 +306,8 @@ docker compose down
 感谢以下项目提供的灵感与资源：
 
 - **原始设计: [imsyy/home](https://github.com/imsyy/home)**
-- **[VORE-API](https://github.com/imsyy/home)**
+- **[VORE-API](https://api.vore.top)**
 - **[小小API](https://xxapi.cn/)**
 - **图标：[Remix Icon via Iconify](https://icon-sets.iconify.design/ri/)**
-- **图标：[Remix Icon via Iconify](https://icon-sets.iconify.design/mingcute/?keyword=MingCute+Icon)**
+- **图标：[MingCute Icon via Iconify](https://icon-sets.iconify.design/mingcute/?keyword=MingCute+Icon)**
 - **访客统计: 不蒜子**
