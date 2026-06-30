@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <Transition name="fade" mode="out-in">
     <div class="loading" v-if="!store.imgLoadStatus">
       

@@ -57,7 +57,7 @@ const FREE_IP_APIS = [
 ];
 
 
-const FETCH_TIMEOUT = 5000;
+const FETCH_TIMEOUT = 20000;
 
 const fetchWithTimeout = (url, options = {}, timeout = FETCH_TIMEOUT) => {
   const controller = new AbortController();

@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="hitokoto-card glass-card">
     
     <div class="music-area-top" @click.stop="store.musicOpenState = true" title="打开音乐播放器">
