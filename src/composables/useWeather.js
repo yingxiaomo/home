@@ -1,4 +1,4 @@
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import dayjs from 'dayjs';
 import { apiEndpoints } from '@/config';
 
@@ -65,7 +65,6 @@ const weatherData = ref({
   updateTime: ''
 });
 const loading = ref(true); 
-let isInitialized = false;
 const getLocationByAmap = async (key) => {
   if (!key) return null;
   try {
@@ -341,13 +340,22 @@ const fetchWeather = async () => {
   loading.value = false;
 };
 
+let weatherPromise = null;
+
 export const useWeather = () => {
-  if (!isInitialized) {
-    onMounted(async () => {
-      await fetchWeather();
-      setInterval(fetchWeather, 30 * 60 * 1000); 
-    });
-    isInitialized = true;
+  if (!weatherPromise) {
+    weatherPromise = fetchWeather();
   }
+
+  let intervalId = null;
+
+  onMounted(() => {
+    intervalId = setInterval(fetchWeather, 30 * 60 * 1000);
+  });
+
+  onUnmounted(() => {
+    if (intervalId) clearInterval(intervalId);
+  });
+
   return { weatherData, loading, refreshWeather: fetchWeather };
 };

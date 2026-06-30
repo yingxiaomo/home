@@ -184,7 +184,8 @@ const onTimeUpdate = (e) => {
       updateByIndex();
   }
 
-  const time = e.target.currentTime;
+  // 兼容数字和 DOM Event 两种传参方式
+  const time = typeof e === 'number' ? e : e?.target?.currentTime ?? 0;
   if (lrcLines.length) {
     let idx = -1;
     for (let i = 0; i < lrcLines.length; i++) {

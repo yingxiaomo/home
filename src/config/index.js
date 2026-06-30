@@ -59,7 +59,7 @@ export const themeConfig = {
     localCount: 10,                       // 本地背景图片数量，当 type 为 'local' 时生效，随机读取 src/assets/backgrounds/ 目录图片。
 
 // 在线背景 API 地址，当 type 为 'api' 时生效。      
-    apiURL: "https://img.paulzzh.com/touhou/random",      // 随机二次元
+    // apiURL: "https://img.paulzzh.com/touhou/random",      // 随机二次元
     apiURL: "https://api.vore.top/api/RandBG",            // 随机二次元
 //  apiURL: "https://api.vore.top/api/Bing",              // 必应每日一图  
   },

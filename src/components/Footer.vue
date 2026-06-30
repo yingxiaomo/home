@@ -96,8 +96,11 @@ const loadBusuanzi = () => {
   }
 };
 
+let busuanziLoaded = false;
+
 watch(() => store.playerState, (isPlaying) => {
-  if (!isPlaying) {
+  if (!isPlaying && !busuanziLoaded) {
+    busuanziLoaded = true;
     nextTick(() => {
       loadBusuanzi();
     });

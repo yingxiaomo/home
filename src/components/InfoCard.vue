@@ -4,7 +4,7 @@
       <img :src="logoUrl" class="logo" alt="Logo" />
       <div class="site-name">
         <span class="main">{{ config.title }}</span>
-        <span class="sub">.{{ config.url.split('.')[1] }}</span>
+        <span class="sub">.{{ config.url.split('.').pop() }}</span>
       </div>
     </div>
     <div class="desc-card glass-card">
