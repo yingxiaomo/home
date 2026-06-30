@@ -1,4 +1,4 @@
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 
 export function useHitokoto() {
   const hitokoto = ref({
@@ -30,6 +30,10 @@ export function useHitokoto() {
 
   onMounted(() => {
     fetchHitokoto();
+  });
+
+  onUnmounted(() => {
+    if (timer) clearTimeout(timer);
   });
 
   return { hitokoto, updateHitokoto };

@@ -41,19 +41,9 @@ import { siteConfig } from '@/config';
 import { Icon } from '@iconify/vue';
 import dayjs from 'dayjs';
 
-const _hash_sig = "6230317659576c595a32357057513d3d"; 
-const _hash_key = "5a57317661433976625739686158686e626d6c354c3231765979356964576830615763764c7a707a6348523061413d3d"; 
-
-const _verify = (h) => {
-  try {
-    const s = h.match(/.{1,2}/g).map(b => String.fromCharCode(parseInt(b, 16))).join('');
-    return window.atob(s).split('').reverse().join('');
-  } catch (e) { return 'Error'; }
-};
-
 const sys = {
-  n: _verify(_hash_sig), 
-  p: _verify(_hash_key) 
+  n: 'YingXiaoMo',
+  p: 'https://github.com/yingxiaomo/home'
 };
 
 const store = useGlobalStore();

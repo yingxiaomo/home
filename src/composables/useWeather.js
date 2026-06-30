@@ -57,6 +57,15 @@ const FREE_IP_APIS = [
 ];
 
 
+const FETCH_TIMEOUT = 5000;
+
+const fetchWithTimeout = (url, options = {}, timeout = FETCH_TIMEOUT) => {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeout);
+  return fetch(url, { ...options, signal: controller.signal })
+    .finally(() => clearTimeout(timer));
+};
+
 const weatherData = ref({
   city: '定位中...',
   weather: '--',
@@ -68,7 +77,7 @@ const loading = ref(true);
 const getLocationByAmap = async (key) => {
   if (!key) return null;
   try {
-    const res = await fetch(`${AMAP_BASE_URL}/v3/ip?key=${key}`);
+    const res = await fetchWithTimeout(`${AMAP_BASE_URL}/v3/ip?key=${key}`);
     const data = await res.json();
     if (data.status === '1' && typeof data.adcode === 'string' && data.adcode.length > 0) {
       console.log('📍 高德定位成功:', data.city, `(Adcode: ${data.adcode})`);
@@ -88,7 +97,7 @@ const getLocationByUserApi = async () => {
     for (const api of userGeoAPIs) {
         try {
             const url = api.url;
-            const res = await fetch(url);
+            const res = await fetchWithTimeout(url);
             const data = await res.json();
             if (data && data.city && data.ip) {
                 console.log(`✅ ${api.name} 成功: ${data.city}`);
@@ -146,13 +155,13 @@ const getLocationByFreeApi = async () => {
 const getQWeather = async (location, key, host) => {
   try {
     const geoUrl = `${host}/geo/v2/city/lookup?location=${encodeURIComponent(location)}&key=${key}`;
-    const geoRes = await fetch(geoUrl);
+    const geoRes = await fetchWithTimeout(geoUrl);
     const geoData = await geoRes.json();
 
     if (geoData.code === '200' && geoData.location?.length > 0) {
       const locInfo = geoData.location[0];
       const weatherUrl = `${host}/v7/weather/now?location=${locInfo.id}&key=${key}`;
-      const weatherRes = await fetch(weatherUrl);
+      const weatherRes = await fetchWithTimeout(weatherUrl);
       const weatherDataRes = await weatherRes.json();
 
       if (weatherDataRes.code === '200') {
@@ -178,7 +187,7 @@ const getQWeather = async (location, key, host) => {
 const getAmapWeather = async (location, key) => {
   try {
     const url = `${AMAP_BASE_URL}/v3/weather/weatherInfo?city=${encodeURIComponent(location)}&key=${key}&extensions=base`;
-    const res = await fetch(url);
+    const res = await fetchWithTimeout(url);
     const data = await res.json();
 
     if (data.status === '1' && data.lives?.length > 0) {
@@ -203,7 +212,7 @@ const getAmapWeather = async (location, key) => {
 const getVoreWeather = async () => {
   try {
     const url = 'https://api.vore.top/api/Weather';
-    const res = await fetch(url);
+    const res = await fetchWithTimeout(url);
     const data = await res.json();
     
     if (data.code === 200 && data.data) {
@@ -238,7 +247,7 @@ const getUserWeather = async (host, lat, lon, city) => {
     }
     params.append('city', city);
     const url = `${host}/api/weather?${params.toString()}`;
-    const res = await fetch(url);
+    const res = await fetchWithTimeout(url);
     const data = await res.json();
     
     if (data.status === 'ok' && data.data) {

@@ -66,14 +66,7 @@ const handleError = () => {
   }
 };
 
-// 超时兜底：防止图片加载过慢一直卡 Loading
-setTimeout(() => {
-  if (!store.imgLoadStatus) {
-    console.warn('⚠️ 背景图加载超时，强制进入页面');
-    store.setImgLoadStatus(true);
-    store.backgroundShow = true;
-  }
-}, 5000); // 5秒后强制解除 Loading
+ // 5秒后强制解除 Loading
 
 onMounted(() => {
   if (themeConfig.background.type === 'api') {
@@ -81,6 +74,15 @@ onMounted(() => {
   } else {
     loadLocalImage();
   }
+
+  // 超时兜底：5秒后如果背景还未加载完成则强制进入
+  setTimeout(() => {
+    if (!store.imgLoadStatus) {
+      console.warn('⚠️ 背景图加载超时，强制进入页面');
+      store.setImgLoadStatus(true);
+      store.backgroundShow = true;
+    }
+  }, 5000);
 });
 </script>
 

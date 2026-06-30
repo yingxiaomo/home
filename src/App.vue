@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <Transition name="fade" mode="out-in">
     <div class="loading" v-if="!store.imgLoadStatus">
       
@@ -135,7 +135,7 @@ body {
   min-height: 100vh;
   overflow-x: hidden; 
   background: #222; 
-  font-family: "HarmonyOS_Regular", "Microsoft YaHei", sans-serif; 
+  font-family: "Microsoft YaHei", sans-serif; 
 }
 
 .loading { 

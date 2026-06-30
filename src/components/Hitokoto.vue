@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="hitokoto-card glass-card">
     
     <div class="music-area-top" @click.stop="store.musicOpenState = true" title="打开音乐播放器">
@@ -121,7 +121,7 @@ const store = useGlobalStore();
       text-overflow: ellipsis;
       word-break: break-word;
       
-      font-family: "HarmonyOS_Regular", "Microsoft YaHei", sans-serif !important;
+      font-family: "Microsoft YaHei", sans-serif !important;
     }
   }
 
@@ -151,7 +151,7 @@ const store = useGlobalStore();
 
       max-width: 100%; 
       
-      font-family: "HarmonyOS_Regular", "Microsoft YaHei", sans-serif !important;
+      font-family: "Microsoft YaHei", sans-serif !important;
     }
   }
 }
